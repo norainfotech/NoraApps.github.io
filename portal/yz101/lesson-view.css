@@ -14,3 +14,4 @@
 [data-lesson-view] .actions .mentor-open{justify-content:center;text-align:center}[data-lesson-view] .mentor-open small{text-align:center}
 
 .mentor-dialog #mentor-form button{color:#fff!important;font-weight:700}
+[data-lesson-view] .field-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 12px}[data-lesson-view] .field-row .field-info{margin:0}.char-count{font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}.char-count.low{color:#a22c2c}

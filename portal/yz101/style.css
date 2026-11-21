@@ -117,3 +117,5 @@ button.text{color:var(--brand-ink)}
 .goal-choice.in{background:var(--brand-soft);border-color:var(--brand)}
 
 .lesson.soon{opacity:.6}.lesson.soon .num{color:var(--muted)}
+.goal-choice strong[data-tick]:not([data-tick=""])::after{content:" "attr(data-tick);color:#15803d}
+#result-secondary{margin-top:10px}
