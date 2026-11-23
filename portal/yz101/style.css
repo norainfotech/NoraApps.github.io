@@ -153,3 +153,11 @@ body[data-page="welcome"] header{display:none}.celebrate-mark{font-size:56px;mar
 .back-btn{display:grid;place-items:center;width:42px;height:42px;margin:4px 0 0;padding:0;border:0;border-radius:50%;background:#FFF1C9;color:#6B4400;cursor:pointer}
 .back-btn:hover{background:#FFE7A0}.back-btn:focus-visible{outline:3px solid #FFC83D;outline-offset:2px}
 .auth.level{text-align:left;margin-top:8px}
+
+/* Tünel düzeni: başlık üstte, ana eylemler altta */
+body:is([data-page="goal"],[data-page="plan"],[data-page="level"],[data-page="journey-intro"],[data-page="invite"],[data-page="place-result"],[data-page="celebrate"],[data-page="program"]) main>section.auth{min-height:calc(100dvh - 170px);display:flex;flex-direction:column}
+body:is([data-page="goal"],[data-page="plan"],[data-page="journey-intro"],[data-page="invite"],[data-page="place-result"],[data-page="celebrate"],[data-page="program"]) main>section.auth>.actions{margin-top:auto}
+body[data-page="level"] .btn-row{margin-top:auto}
+main>section.auth>button+button{margin-top:12px}
+body[data-page="welcome"] main>section.welcome{min-height:calc(100dvh - 60px);display:flex;flex-direction:column;justify-content:center}
+body[data-page="welcome"] main>section.welcome>.actions{margin-top:14px}
