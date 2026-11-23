@@ -134,7 +134,7 @@ function journeyIntro(){
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler hazır olunca burada olacak.</p><button class="primary wide actions" data-action="to-home">Devam</button></section>`;return;}
- root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="secondary wide" data-action="invite-list" data-task="${n.task_id}">Ders listeme ekle</button><button class="text actions" data-action="placement">Seviyemi koç belirlesin</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="secondary wide" data-action="invite-list" data-task="${n.task_id}">Ders listeme ekle</button></section><section class="card auth level-offer"><strong>Bu konuları zaten biliyor olabilirsin.</strong><p class="muted">4 kısa soruyla seviyeni belirleyelim. Gerekmeyen dersleri atlarsın, puanı yine alırsın.</p><button class="secondary wide" data-action="placement">Seviyemi koç belirlesin</button></section>`;
 }
 
 /* ---------- Seviye testi ---------- */

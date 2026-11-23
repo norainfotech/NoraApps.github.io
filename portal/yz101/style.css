@@ -136,3 +136,5 @@ body{padding-bottom:84px}body[data-page="lesson"],body[data-page="goal"],body[da
 .setup-list{padding-left:20px;display:flex;flex-direction:column;gap:14px}.setup-list a.button{display:inline-block;margin-top:6px}
 .lesson-reward{font-size:28px;font-weight:800;margin:6px 0}
 .gate{text-align:left}.gate input{width:100%;margin:10px 0}.gate .gate-msg{color:#b42318;font-size:14px;min-height:20px;margin:0}.gate .code-input{letter-spacing:6px;text-align:center;font-size:24px}
+
+.level-offer{margin-top:14px}
