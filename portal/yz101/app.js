@@ -67,7 +67,7 @@ window.addEventListener('popstate',e=>{
  const p=e.state?.yz101?e.state.page:'home';page=mainPages.includes(p)?p:'home';
  restoring=true;render();restoring=false;window.scrollTo(0,0);
 });
-const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Bugün','☀️'],['journey','Yolculuğum','🧭'],['profile','Profil','🙂']].map(([p,t,i])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${t}</button>`).join('')}</nav>`;
+const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa','🏠'],['journey','Dersler','📚'],['profile','Profil','🙂']].map(([p,t,i])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${t}</button>`).join('')}</nav>`;
 
 /* ---------- E-posta kodu (anonim -> kalıcı hesap) ---------- */
 function codeDialog({title,intro,send,verify,done}){
@@ -216,25 +216,23 @@ function programScreen(){
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list"><li><b>Hatırlatmaları aç</b><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody()}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
 }
 /* ---------- Bugün ---------- */
-function greetingLine(){const h=new Date().getHours();return h>=5&&h<12?'Günaydın.':h<18?'İyi günler.':'İyi akşamlar.';}
 function homeView(){
  const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
  let card;
- if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam.</h2><p class="muted">Bugünkü 3 dersini bitirdin. Yarın devam ediyoruz.</p>`;
- else if(n)card=`<h2>${esc(titleOf(n.task_id))}</h2><p class="muted">${n.listed?'Listendeki ders. Hazırsan başlayalım.':'Bugünün dersi hazır. Başlayalım.'}</p><button class="primary wide" data-lesson="${n.task_id}" data-mode="lesson">Başla</button>`;
+ if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam 🎉</h2><p class="muted">Yarın 20:00'de görüşürüz.</p>`;
+ else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><button class="primary wide" data-lesson="${n.task_id}" data-mode="lesson">Başla</button>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Hazır olunca burada göreceksin.</p>`;
  const listed=rows().filter(r=>r.listed&&!r.completed&&r.published);
  const done=Math.min(doneCount(),goalCount());
  return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
- <section class="card coach-card"><span class="eyebrow">Koç · ${greetingLine()}</span>${card}</section>
- <section class="card program-card"><strong>Bugün</strong><p>${a.daily_done>0?'✓':'○'} Günün dersi <span class="muted">· 20:00</span></p></section>
- ${listed.length?`<section class="card"><strong>Ders listem</strong><div class="list-rows">${listed.map(r=>`<button class="settings-row" data-lesson="${r.task_id}" data-mode="lesson">${esc(titleOf(r.task_id))} <span>›</span></button>`).join('')}</div></section>`:''}
- <section class="card"><strong>Yolculuğun</strong><p class="muted">${done}/${goalCount()} ders · ${esc(u.goal)}</p><progress max="${goalCount()}" value="${done}"></progress><button class="text" data-page="journey">Yolculuğumu gör</button></section>`;
+ <button class="card progress-strip" data-page="journey" aria-label="Dersler sayfasını aç"><span><strong>${esc(u.goal)}</strong><span class="muted">${done}/${goalCount()} ders</span></span><progress max="${goalCount()}" value="${done}"></progress></button>
+ <section class="card coach-card">${card}</section>
+ ${listed.length?`<section class="card"><strong>Ders listem</strong><div class="list-rows">${listed.map(r=>`<button class="settings-row" data-lesson="${r.task_id}" data-mode="lesson">${esc(titleOf(r.task_id))} <span>›</span></button>`).join('')}</div></section>`:''}`;
 }
 function journeyView(){
  const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
- return `<h1>Yolculuğum</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),can=r?.published;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':'·'} ${esc(i.title)} <span>${can?'›':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+ return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),can=r?.published;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':'·'} ${esc(i.title)} <span>${can?'›':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;

@@ -166,3 +166,7 @@ body[data-page="level"] main>section.auth.level{justify-content:center;min-heigh
 body[data-page="level"] .btn-row{margin-top:28px}
 .day-count{display:flex;align-items:baseline;gap:10px;margin:6px 0 4px}.day-count strong{font-size:72px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-2px}.day-count span{font-size:22px;font-weight:700;color:var(--muted)}
 .roadmap li.start .dot{background:#FFF1C9;border-color:#FFC83D;font-size:18px}
+
+.progress-strip{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.progress-strip>span{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.progress-strip progress{width:100%}
