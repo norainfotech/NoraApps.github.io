@@ -164,3 +164,5 @@ body[data-page="welcome"] main>section.welcome>.actions{margin-top:14px}
 .today-head .pill{white-space:nowrap;flex:0 0 auto}.today-head h1{font-size:22px;min-width:0}
 body[data-page="level"] main>section.auth.level{justify-content:center;min-height:calc(100dvh - 120px)}
 body[data-page="level"] .btn-row{margin-top:28px}
+.day-count{display:flex;align-items:baseline;gap:10px;margin:6px 0 4px}.day-count strong{font-size:72px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-2px}.day-count span{font-size:22px;font-weight:700;color:var(--muted)}
+.roadmap li.start .dot{background:#FFF1C9;border-color:#FFC83D;font-size:18px}

@@ -30,7 +30,8 @@ const goalCount=()=>GOAL_TOTAL[state?.profile?.goal]||10;
 const doneCount=()=>rows().filter(r=>r.completed).length;
 function nextLesson(){const open=rows().filter(r=>r.published&&!r.completed);return open.find(r=>!isLocked(r)&&!r.listed)||open.find(r=>!isLocked(r))||null;}
 function nextLocked(){return rows().filter(r=>r.published&&!r.completed&&isLocked(r)).sort((a,b)=>Date.parse(a.locked_until)-Date.parse(b.locked_until))[0]||null;}
-function weeksLeft(){const left=Math.max(0,goalCount()-Math.min(doneCount(),goalCount())),min=plans[state?.profile?.daily_plan]||20;return Math.max(1,Math.ceil(left*MIN_PER_LESSON/min/7));}
+const planMin=()=>plans[state?.profile?.daily_plan]||20;
+function daysLeft(){const left=Math.max(0,goalCount()-Math.min(doneCount(),goalCount()));return Math.max(1,Math.ceil(left*MIN_PER_LESSON/planMin()));}
 const firstKey=()=>'yz101_celebrated_'+(session?.user?.id||'');
 const clock=until=>`<span class="countdown" data-until="${esc(until)}">--:--:--</span>`;
 let deferredInstall=null;
@@ -146,13 +147,24 @@ function levelScreen(){
 }
 function roadmap(){
  const gi=goals.indexOf(state.profile.goal),total=goalCount();
- const lv=stageLevels.slice(0,gi+1).map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=total),done=items.filter(c=>row(c.id)?.completed).length;return {level,count:items.length,done};});
- const cur=lv.findIndex(x=>x.done<x.count);
- const stops=lv.map((x,i)=>{const st=x.done>=x.count?'done':i===cur?'current':'upcoming';return `<li class="${st}"><span class="dot">${st==='done'?'✓':''}</span><div><strong>${x.level}</strong><small>${st==='done'?'Tamamlandı':`${x.count-x.done} ders kaldı`}</small></div></li>`;}).join('');
- return `<ol class="roadmap">${stops}<li class="goal-stop"><span class="dot">🏁</span><div><strong>${esc(state.profile.goal)}</strong><small>Hedefin</small></div></li></ol>`;
+ let cum=0,prev=0;
+ const stops=stageLevels.slice(0,gi+1).map(level=>{
+  const items=COURSE.filter(c=>c.level===level&&c.n<=total),left=items.filter(c=>!row(c.id)?.completed).length;
+  if(!left)return `<li class="done"><span class="dot">✓</span><div><strong>${level}</strong><small>Tamamlandı</small></div></li>`;
+  cum+=left*MIN_PER_LESSON/planMin();const end=Math.max(prev+1,Math.ceil(cum)),start=prev+1;prev=end;
+  return `<li class="${prev===end&&start===1?'current':'upcoming'}"><span class="dot"></span><div><strong>${level}</strong><small>${start===end?`Gün ${start}`:`Gün ${start}–${end}`}</small></div></li>`;
+ }).join('');
+ return `<ol class="roadmap"><li class="start"><span class="dot">📍</span><div><strong>Bugün</strong></div></li>${stops}<li class="goal-stop"><span class="dot">🏁</span><div><strong>${esc(state.profile.goal)}</strong><small>Gün ${daysLeft()} · hedefin</small></div></li></ol>`;
+}
+function animateCount(){
+ const el=root.querySelector('[data-count]');if(!el)return;const to=Number(el.dataset.count);
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=to;return;}
+ const t0=performance.now(),dur=1100;const step=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e);if(p<1&&el.isConnected)requestAnimationFrame(step);else el.textContent=to;};requestAnimationFrame(step);
 }
 function journeyIntro(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><h1>Yaklaşık ${weeksLeft()} hafta</h1><p class="muted">Günde ${plans[state.profile.daily_plan]||20} dakikayla hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+ const n=daysLeft();
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${planMin()} dakikayla ${n} ders gününde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+ animateCount();
 }
 function inviteScreen(){
  const n=nextLesson();
@@ -220,7 +232,7 @@ function homeView(){
 }
 function journeyView(){
  const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
- return `<h1>Yolculuğum</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · yaklaşık ${weeksLeft()} hafta</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${level}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),can=r?.published;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':'·'} ${esc(i.title)} <span>${can?'›':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+ return `<h1>Yolculuğum</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${level}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),can=r?.published;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':'·'} ${esc(i.title)} <span>${can?'›':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
