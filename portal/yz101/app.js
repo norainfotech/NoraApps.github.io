@@ -101,6 +101,7 @@ function emailGate(){
 
 /* ---------- Karşılama, giriş ---------- */
 function welcome(){
+ document.body.dataset.page='welcome';
  root.innerHTML=`<section class="auth welcome"><span class="welcome-mark"><img src="app-icon.svg" alt="" width="80" height="80"></span><h1>Yapay zekayı<br>koçunla öğren.</h1><p class="muted">Kısa dersler. Her gün küçük bir adım.</p><button class="primary wide" data-action="start">Başla</button><button class="text actions" data-action="login">Hesabım var</button></section>`;
 }
 async function startAnonymous(){
@@ -177,7 +178,7 @@ function placementResult(x){
 /* ---------- Kutlama ve program ---------- */
 function celebrateScreen(points){
  page='celebrate';
- root.innerHTML=`<section class="card auth"><span class="welcome-mark"><img src="app-icon.svg" alt="" width="80" height="80"></span><h1>İlk dersin tamam!</h1><p class="lesson-reward">+${points} puan</p><p class="muted">İlk adım en zoru. Devam ediyoruz.</p>${navigator.share?'<button class="secondary wide" data-action="share">Arkadaşlarınla paylaş</button>':''}<button class="primary wide actions" data-action="celebrate-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>İlk dersin tamam!</h1><p class="lesson-reward">+${points} puan</p><p class="muted">İlk adım en zoru. Devam ediyoruz.</p>${navigator.share?'<button class="secondary wide" data-action="share">Arkadaşlarınla paylaş</button>':''}<button class="primary wide actions" data-action="celebrate-next">Devam</button></section>`;
 }
 function programScreen(){
  page='program';
