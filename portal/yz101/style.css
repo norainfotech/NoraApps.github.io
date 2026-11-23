@@ -162,3 +162,5 @@ main>section.auth>button+button{margin-top:12px}
 body[data-page="welcome"] main>section.welcome{min-height:calc(100dvh - 60px);display:flex;flex-direction:column;justify-content:center}
 body[data-page="welcome"] main>section.welcome>.actions{margin-top:14px}
 .today-head .pill{white-space:nowrap;flex:0 0 auto}.today-head h1{font-size:22px;min-width:0}
+body[data-page="level"] main>section.auth.level{justify-content:center;min-height:calc(100dvh - 120px)}
+body[data-page="level"] .btn-row{margin-top:28px}
