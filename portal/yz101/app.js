@@ -132,7 +132,7 @@ function planScreen(){
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.plan=Number(e.target.value);});
 }
 function levelScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><p>4 kısa soruyla seviyeni ölçebilirim. Bildiğin dersleri atlarsın, puanını yine alırsın.</p><button class="primary wide actions" data-action="placement">Seviyemi koç belirlesin</button><button class="secondary wide" data-action="level-skip">Baştan başlayacağım</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="level-skip">Baştan başlayacağım</button><button class="primary" data-action="placement">Seviyemi koç belirlesin</button></div></section>`;
 }
 function journeyIntro(){
  const lv=stageLevels.slice(startIdx(),goals.indexOf(state.profile.goal)+1);

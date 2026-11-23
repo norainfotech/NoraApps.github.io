@@ -139,3 +139,4 @@ body{padding-bottom:84px}body[data-page="lesson"],body[data-page="goal"],body[da
 
 .level-offer{margin-top:14px}
 body[data-page="welcome"] header{display:none}.celebrate-mark{font-size:56px;margin:0;line-height:1}
+.btn-row{display:flex;gap:14px;margin-top:24px}.btn-row button{flex:1;min-width:0;margin:0}
