@@ -127,6 +127,9 @@ function planScreen(){
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Günlük süre</span><h1>Her gün ne kadar ayırabilirsin?</h1><fieldset class="goal-choices">${Object.entries(plans).map(([k,m])=>`<label class="goal-choice"><input type="radio" name="plan" value="${k}" ${String(tun.plan)===k?'checked':''}><span><strong>Günde ${m} dakika</strong></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="plan-next">Devam</button></section>`;
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.plan=Number(e.target.value);});
 }
+function levelScreen(){
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><p>4 kısa soruyla seviyeni ölçebilirim. Bildiğin dersleri atlarsın, puanını yine alırsın.</p><button class="primary wide actions" data-action="placement">Seviyemi koç belirlesin</button><button class="secondary wide" data-action="level-skip">Baştan başlayacağım</button></section>`;
+}
 function journeyIntro(){
  const lv=['Başlangıç','Orta','İleri'].slice(0,goals.indexOf(state.profile.goal)+1);
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><h1>Hedefin: ${esc(state.profile.goal)}</h1><p>Günde ${plans[state.profile.daily_plan]||20} dakikayla yaklaşık <b>${weeksLeft()} hafta</b>.</p><ol class="path">${lv.map(l=>`<li>${l}</li>`).join('')}</ol><button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
@@ -134,7 +137,7 @@ function journeyIntro(){
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler hazır olunca burada olacak.</p><button class="primary wide actions" data-action="to-home">Devam</button></section>`;return;}
- root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="secondary wide" data-action="invite-list" data-task="${n.task_id}">Ders listeme ekle</button></section><section class="card auth level-offer"><strong>Bu konuları zaten biliyor olabilirsin.</strong><p class="muted">4 kısa soruyla seviyeni belirleyelim. Gerekmeyen dersleri atlarsın, puanı yine alırsın.</p><button class="secondary wide" data-action="placement">Seviyemi koç belirlesin</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="secondary wide" data-action="invite-list" data-task="${n.task_id}">Ders listeme ekle</button></section>`;
 }
 
 /* ---------- Seviye testi ---------- */
@@ -213,8 +216,8 @@ function profileView(){
 function render(){
  clearInterval(countdownTimer);document.body.dataset.page=page;
  if(!session||!state){welcome();return;}
- if(!state.profile&&!['goal','plan','journey-intro'].includes(page))page='goal';
- const tunnel={goal:goalScreen,plan:planScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
+ if(!state.profile&&!['goal','plan','level','journey-intro'].includes(page))page='goal';
+ const tunnel={goal:goalScreen,plan:planScreen,level:levelScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
  if(tunnel[page]){tunnel[page]();return;}
  if(['place','place-result','celebrate','lesson'].includes(page))return;
  const v={home:homeView,journey:journeyView,profile:profileView}[page]||homeView;
@@ -257,11 +260,12 @@ root.addEventListener('click',event=>{
   if(a==='start'){await startAnonymous();return;}
   if(a==='login'){await loginFlow();return;}
   if(a==='goal-next'){if(!tun.goal)return;page='plan';render();window.scrollTo(0,0);return;}
-  if(a==='plan-next'){await coach('start',{goal:tun.goal,plan:tun.plan});await loadState();page='journey-intro';render();window.scrollTo(0,0);return;}
+  if(a==='plan-next'){await coach('start',{goal:tun.goal,plan:tun.plan});await loadState();page='level';render();window.scrollTo(0,0);return;}
+  if(a==='level-skip'){page='journey-intro';render();window.scrollTo(0,0);return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
   if(a==='invite-list'){await emailGate();await coach('list_add',{task:d.task});await loadState();go('home');return;}
   if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
-  if(a==='place-next'){page='invite';render();window.scrollTo(0,0);return;}
+  if(a==='place-next'){page='journey-intro';render();window.scrollTo(0,0);return;}
   if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
   if(a==='celebrate-next'){programScreen();window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
