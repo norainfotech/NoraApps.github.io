@@ -140,3 +140,13 @@ body{padding-bottom:84px}body[data-page="lesson"],body[data-page="goal"],body[da
 .level-offer{margin-top:14px}
 body[data-page="welcome"] header{display:none}.celebrate-mark{font-size:56px;margin:0;line-height:1}
 .btn-row{display:flex;gap:14px;margin-top:24px}.btn-row button{flex:1;min-width:0;margin:0}
+.roadmap{list-style:none;margin:22px 0 8px;padding:0;position:relative}
+.roadmap li{position:relative;display:flex;gap:14px;align-items:center;padding:0 0 26px 0;text-align:left}
+.roadmap li:last-child{padding-bottom:0}
+.roadmap li::before{content:"";position:absolute;left:17px;top:36px;bottom:0;width:3px;background:#F1D58A;border-radius:2px}
+.roadmap li:last-child::before{display:none}
+.roadmap .dot{flex:0 0 38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#FCF4E7;border:3px solid #F1D58A;font-size:18px;color:#fff;position:relative;z-index:1}
+.roadmap li.done .dot{background:var(--success,#15803d);border-color:var(--success,#15803d)}
+.roadmap li.current .dot{background:#FFC83D;border-color:#FFC83D;box-shadow:0 0 0 6px #FFF1C9}
+.roadmap li.goal-stop .dot{background:#fff;border-color:#FFC83D}
+.roadmap strong{display:block;font-size:18px}.roadmap small{color:var(--muted)}

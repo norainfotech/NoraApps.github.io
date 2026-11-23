@@ -134,9 +134,15 @@ function planScreen(){
 function levelScreen(){
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="level-skip">Baştan başlayacağım</button><button class="primary" data-action="placement">Seviyemi koç belirlesin</button></div></section>`;
 }
+function roadmap(){
+ const gi=goals.indexOf(state.profile.goal),total=goalCount();
+ const lv=stageLevels.slice(0,gi+1).map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=total),done=items.filter(c=>row(c.id)?.completed).length;return {level,count:items.length,done};});
+ const cur=lv.findIndex(x=>x.done<x.count);
+ const stops=lv.map((x,i)=>{const st=x.done>=x.count?'done':i===cur?'current':'upcoming';return `<li class="${st}"><span class="dot">${st==='done'?'✓':''}</span><div><strong>${x.level}</strong><small>${st==='done'?'Tamamlandı':`${x.count-x.done} ders kaldı`}</small></div></li>`;}).join('');
+ return `<ol class="roadmap">${stops}<li class="goal-stop"><span class="dot">🏁</span><div><strong>${esc(state.profile.goal)}</strong><small>Hedefin</small></div></li></ol>`;
+}
 function journeyIntro(){
- const lv=stageLevels.slice(startIdx(),goals.indexOf(state.profile.goal)+1);
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><h1>Hedefin: ${esc(state.profile.goal)}</h1><p>Günde ${plans[state.profile.daily_plan]||20} dakikayla yaklaşık <b>${weeksLeft()} hafta</b>.</p><ol class="path">${lv.map(l=>`<li>${l}</li>`).join('')}</ol><button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><h1>Yaklaşık ${weeksLeft()} hafta</h1><p class="muted">Günde ${plans[state.profile.daily_plan]||20} dakikayla hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
 }
 function inviteScreen(){
  const n=nextLesson();
