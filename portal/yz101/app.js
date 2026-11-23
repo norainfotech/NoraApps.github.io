@@ -4,8 +4,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let session=null,state=null,page='home',serverOffset=0,countdownTimer=null,working=false;
 const goals=['Anlamak','Kullanmak','Üretmek'];
 const goalInfo={Anlamak:'Yapay zekanın ne olduğunu ve nasıl çalıştığını anla.',Kullanmak:'Günlük işlerinde yapay zekayı kullan.',Üretmek:'Yapay zekayla içerik, otomasyon ve ürün üret.'};
-const plans={1:10,2:20,3:30};
-const MIN_PER_LESSON=6;
+const PER_DAY=2;
 function notify(message){showResultDialog('Bilgilendirme',message,'Tamam');}
 function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  document.querySelector('#app-dialog')?.remove();
@@ -30,8 +29,7 @@ const goalCount=()=>GOAL_TOTAL[state?.profile?.goal]||10;
 const doneCount=()=>rows().filter(r=>r.completed).length;
 function nextLesson(){const open=rows().filter(r=>r.published&&!r.completed);return open.find(r=>!isLocked(r)&&!r.listed)||open.find(r=>!isLocked(r))||null;}
 function nextLocked(){return rows().filter(r=>r.published&&!r.completed&&isLocked(r)).sort((a,b)=>Date.parse(a.locked_until)-Date.parse(b.locked_until))[0]||null;}
-const planMin=()=>plans[state?.profile?.daily_plan]||20;
-function daysLeft(){const left=Math.max(0,goalCount()-Math.min(doneCount(),goalCount()));return Math.max(1,Math.ceil(left*MIN_PER_LESSON/planMin()));}
+function daysLeft(){const left=Math.max(0,goalCount()-Math.min(doneCount(),goalCount()));return Math.max(1,Math.ceil(left/PER_DAY));}
 const firstKey=()=>'yz101_celebrated_'+(session?.user?.id||'');
 const clock=until=>`<span class="countdown" data-until="${esc(until)}">--:--:--</span>`;
 let deferredInstall=null;
@@ -107,7 +105,7 @@ function welcome(){
 }
 async function startAnonymous(){
  if(!session){const {data,error}=await client.auth.signInAnonymously({options:{data:{origin_app:'yz101'}}});if(error)throw error;session=data.session;}
- await loadState();tun={goal:null,plan:2};page=state.profile?'home':state.placement?.done?'goal':'level';
+ await loadState();tun={goal:null};page=state.profile?'home':state.placement?.done?'goal':'level';
  state.profile?go('home'):render();
 }
 async function loginFlow(){
@@ -119,24 +117,20 @@ async function loginFlow(){
 }
 
 /* ---------- Tünel ---------- */
-let tun={goal:null,plan:2};
+let tun={goal:null};
 const tickGoals=()=>{const fs=root.querySelector('.goal-choices');if(!fs)return;const idx=[...fs.querySelectorAll('input')].findIndex(x=>x.checked);fs.querySelectorAll('.goal-choice').forEach((l,i)=>{l.classList.toggle('in',i<=idx);l.querySelector('strong').dataset.tick=idx>=0&&i<=idx?'✓':'';});root.querySelector('[data-action="goal-next"]').disabled=idx<0;};
 const startIdx=()=>Math.max(0,stageLevels.indexOf(state?.placement?.result||'Başlangıç'));
 const goalsAvail=()=>goals.slice(startIdx());
-function afterLevel(){const g=goalsAvail();if(g.length===1)tun.goal=g[0];page=g.length===1?'plan':'goal';render();window.scrollTo(0,0);}
+async function startJourney(){await coach('start',{goal:tun.goal});await loadState();page='journey-intro';render();window.scrollTo(0,0);}
+function afterLevel(){const g=goalsAvail();if(g.length===1){tun.goal=g[0];return startJourney();}page='goal';render();window.scrollTo(0,0);}
 function goalScreen(){
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Hedefin</span><h1>Yapay zekayla ne yapmak istiyorsun?</h1><fieldset class="goal-choices">${goalsAvail().map(g=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" ${tun.goal===g?'checked':''}><span><strong>${g}${g==='Üretmek'?' <em class="pill">Önerilen</em>':''}</strong><small class="muted">${goalInfo[g]}</small></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="goal-next" disabled>Devam</button></section>`;
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
 }
-function planScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Günlük süre</span><h1>Her gün ne kadar ayırabilirsin?</h1><fieldset class="goal-choices">${Object.entries(plans).map(([k,m])=>`<label class="goal-choice"><input type="radio" name="plan" value="${k}" ${String(tun.plan)===k?'checked':''}><span><strong>Günde ${m} dakika</strong></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="plan-next">Devam</button></section>`;
- root.querySelector('.goal-choices').addEventListener('change',e=>{tun.plan=Number(e.target.value);});
-}
 function backTarget(p){
  const done=!!state?.placement?.done,single=goalsAvail().length===1;
  if(p==='goal')return done?null:'level';
- if(p==='plan')return single?(done?null:'level'):'goal';
- if(p==='journey-intro')return 'plan';
+ if(p==='journey-intro')return single?(done?null:'level'):'goal';
  if(p==='invite')return 'journey-intro';
  if(p==='place')return 'level';
  return null;
@@ -152,7 +146,7 @@ function roadmap(){
  const stops=levels.map((level,k)=>{
   const items=COURSE.filter(c=>c.level===level&&c.n<=total),left=items.filter(c=>!row(c.id)?.completed).length,last=k===levels.length-1,name=goals[k];
   if(!left)return `<li class="done${last?' goal-stop':''}"><span class="dot">${last?'🏁':'✓'}</span><div><strong>${name}</strong><small>${last?'Hedefin · tamamlandı':'Tamamlandı'}</small></div></li>`;
-  cum+=left*MIN_PER_LESSON/planMin();const start=prev+1,end=Math.max(start,Math.ceil(cum));prev=end;
+  cum+=left/PER_DAY;const start=prev+1,end=Math.max(start,Math.ceil(cum));prev=end;
   const days=start===end?`Gün ${start}`:`Gün ${start}–${end}`;
   return `<li class="${last?'goal-stop':start===1?'current':'upcoming'}"><span class="dot">${last?'🏁':''}</span><div><strong>${name}</strong><small>${days}${last?' · hedefin':''}</small></div></li>`;
  }).join('');
@@ -165,7 +159,7 @@ function animateCount(){
 }
 function journeyIntro(){
  const n=daysLeft();
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${planMin()} dakikayla ${n} ders gününde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${PER_DAY} dersle en az ${n} günde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
  animateCount();
 }
 function inviteScreen(){
@@ -241,7 +235,6 @@ function profileView(){
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
  <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goals.map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
- <details class="goal-picker"><summary><span>Günlük süre</span><strong>${plans[u.daily_plan]||20} dk</strong></summary><div class="goal-options" role="group">${Object.entries(plans).map(([k,m])=>`<button type="button" data-plan="${k}" aria-pressed="${Number(k)===u.daily_plan}">${m} dk</button>`).join('')}</div></details>
  <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a><a class="settings-link" href="gizlilik-politikasi.html">Gizlilik Politikası <span>›</span></a><a class="settings-link" href="kullanim-kosullari.html">Kullanım Koşulları <span>›</span></a><a class="settings-link" href="mailto:all.apps.nora@gmail.com">Yardım ve iletişim <span>↗</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section>${installCard(false)}`;
 }
 
@@ -249,8 +242,8 @@ function profileView(){
 function render(){
  clearInterval(countdownTimer);document.body.dataset.page=page;
  if(!session||!state){welcome();return;}
- if(!state.profile&&!['goal','plan','level','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
- const tunnel={goal:goalScreen,plan:planScreen,level:levelScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
+ if(!state.profile&&!['goal','level','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
+ const tunnel={goal:goalScreen,level:levelScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
  if(tunnel[page]){tunnel[page]();root.insertAdjacentHTML('afterbegin',backBtn(page));return;}
  if(['place','place-result','celebrate','lesson'].includes(page))return;
  const v={home:homeView,journey:journeyView,profile:profileView}[page]||homeView;
@@ -287,13 +280,11 @@ root.addEventListener('click',event=>{
   if(d.lesson){openLesson(d.lesson,d.mode||'lesson');return;}
   if(d.page){go(d.page);return;}
   if(d.goal){await coach('profile',{goal:d.goal});await loadState();render();notify('Hedefin güncellendi.');return;}
-  if(d.plan){await coach('profile',{plan:Number(d.plan)});await loadState();render();notify('Günlük süren güncellendi.');return;}
   if(d.mascot){if(!mascots[d.mascot])return;const {data,error}=await client.auth.updateUser({data:{yz101_mascot:d.mascot}});if(error)throw error;session={...session,user:data.user};render();return;}
   const a=d.action;
   if(a==='start'){await startAnonymous();return;}
   if(a==='login'){await loginFlow();return;}
-  if(a==='goal-next'){if(!tun.goal)return;page='plan';render();window.scrollTo(0,0);return;}
-  if(a==='plan-next'){await coach('start',{goal:tun.goal,plan:tun.plan});await loadState();page='journey-intro';render();window.scrollTo(0,0);return;}
+  if(a==='goal-next'){if(!tun.goal)return;await startJourney();return;}
   if(a==='back'){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
   if(a==='level-skip'){afterLevel();return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}

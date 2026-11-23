@@ -70,7 +70,7 @@ window.createYZ101LessonView=function(opts){
  }
 
  function limitMessage(status){
-  if(status==='daily_limit'){modal('Bugünlük tamam','<p>Bugünlük 3 dersini tamamladın. Yarın kaldığın yerden devam edebilirsin.</p>','Tamam',showHome);return true;}
+  if(status==='daily_limit'){modal('Bugünlük tamam','<p>Bugünlük 2 dersini tamamladın. Yarın kaldığın yerden devam edebilirsin.</p>','Tamam',showHome);return true;}
   return false;
  }
 
@@ -124,7 +124,7 @@ window.createYZ101LessonView=function(opts){
     const rows=rowsMarkup(data.answers,data.numeric_passed,l);
     if(data.passed){
      modal('Dersi tamamladın',`<p class="lesson-reward">+${points} puan</p>`+rows,'Devam et',async()=>{try{await opts.gate?.('after-test');}catch{return;}opts.onCompleted?.(l.id,{points,via:testout?'test':'lesson'});},{tone:'success'});
-    }else if(testout){
+    }else if(testout&&!locked()){
      modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;d.answers=[];d.numeric='';renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{secondary:'Ders listeme ekle',onSecondary:()=>opts.onList?.(l.id),tone:'error'});
     }else if(locked()){
      modal('Testi geçemedin',rows+'<p>Bu dersi Ders listene ekledim; 24 saat sonra tekrar deneyebilirsin.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
@@ -134,7 +134,6 @@ window.createYZ101LessonView=function(opts){
    }else if(data.status==='cooldown'){modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);}
    else if(data.status==='already_completed')showHome();
    else if(limitMessage(data.status)){/* gösterildi */}
-   else if(data.status==='testout_used')notice('Bu ders için kısa testi zaten kullandın. Dersi açıp devam et.');
    else notice(({ai_required:'Önce açık uçlu yanıtını kontrol et.',incomplete:'Tüm soruları yanıtla.'})[data.status]||'Test tamamlanamadı. Tekrar dene.');
   }catch{if(opts.getUser()?.id===owner)notice('Sonuç alınamadı. Aynı yanıtlarla tekrar dene; kaydedilmiş bir sonuç ikinci hak tüketmez.');}
   finally{setBusy(false);if(opts.getUser()?.id===owner&&$('#lesson')&&!$('#result-dialog')?.open)renderLesson();}
