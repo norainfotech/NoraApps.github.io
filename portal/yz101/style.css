@@ -121,3 +121,18 @@ button.text{color:var(--brand-ink)}
 #result-secondary{margin-top:10px}
 .ask-box{background:#FFF6DE;border-radius:14px;padding:12px 14px;margin:0 0 12px;text-align:left;line-height:1.5}.ask-box small{display:block;color:var(--muted);font-weight:600;margin-bottom:4px}.ask-box.good{border:1px solid #FFC83D;background:#fff}
 .goal-mark{display:block;color:#8A5A00;font-weight:600;margin-top:2px}
+
+/* AI Koçu: Bugün, alt menü, tünel */
+body{padding-bottom:84px}body[data-page="lesson"],body[data-page="goal"],body[data-page="plan"],body[data-page="journey-intro"],body[data-page="invite"],body[data-page="place"],body[data-page="place-result"],body[data-page="celebrate"],body[data-page="program"]{padding-bottom:24px}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#FFFAF0;border-top:1px solid var(--border);z-index:5}
+.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;color:var(--muted);border:0;padding:6px 4px;font-size:12px;border-radius:12px}
+.bottom-nav button span{font-size:20px;line-height:1}.bottom-nav button[aria-current="page"]{background:#FFF1C9;color:#6B4400;font-weight:700}
+.today-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}.today-head h1{margin:0;font-size:26px;overflow-wrap:anywhere}
+.coach-card{background:#FFF6DE;border-color:#F1D58A;color:#5C3B00;margin-bottom:14px}.coach-card h2{margin:6px 0}
+.program-card,.card+.card{margin-top:14px}
+.list-rows{display:flex;flex-direction:column;margin-top:8px}.list-rows .settings-row{display:flex;justify-content:space-between;gap:12px;text-align:left;background:transparent;border:0;border-top:1px solid var(--border);padding:12px 0;color:var(--ink)}.list-rows .settings-row:disabled{color:var(--muted)}
+.path{list-style:none;padding:0;margin:14px 0;display:flex;flex-direction:column;gap:8px}.path li{padding:12px 14px;border-radius:14px;background:#FFF1C9;font-weight:650}
+.options{display:flex;flex-direction:column;gap:10px;margin-top:14px}.option-btn{text-align:left;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--ink);font-size:16px}
+.setup-list{padding-left:20px;display:flex;flex-direction:column;gap:14px}.setup-list a.button{display:inline-block;margin-top:6px}
+.lesson-reward{font-size:28px;font-weight:800;margin:6px 0}
+.gate{text-align:left}.gate input{width:100%;margin:10px 0}.gate .gate-msg{color:#b42318;font-size:14px;min-height:20px;margin:0}.gate .code-input{letter-spacing:6px;text-align:center;font-size:24px}

@@ -1,13 +1,11 @@
 const root=document.querySelector('#app');
-const recoveryRequested=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery';
-const client=window.supabase?.createClient('https://gjztdlihsfmozxcgdwke.supabase.co','sb_publishable_tDQAKMpHaorQAplXqg5Nqg_zwOImZeT',{auth:{storageKey:'nora-yz101-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const client=window.supabase?.createClient('https://gjztdlihsfmozxcgdwke.supabase.co','sb_publishable_tDQAKMpHaorQAplXqg5Nqg_zwOImZeT',{auth:{storageKey:'nora-yz101-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const safeUrl=v=>{try{const u=new URL(v);return u.protocol==='https:'?u.href:'';}catch{return '';}};
-const date=v=>v?new Intl.DateTimeFormat('tr-TR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'';
-let serverOffset=0,countdownTimer=null;
-let session=null,state=null,page='home',exam=null,lesson=null,reading=null,recovery=recoveryRequested,noticeTimer,working=false;
+let session=null,state=null,page='home',serverOffset=0,countdownTimer=null,working=false;
 const goals=['Anlamak','Kullanmak','Üretmek'];
-const goalSelect=v=>`<label>Hedef<select name="goal">${goals.map(x=>`<option ${v===x?'selected':''}>${x}</option>`).join('')}</select></label>`;
+const goalInfo={Anlamak:'Yapay zekanın ne olduğunu ve nasıl çalıştığını anla.',Kullanmak:'Günlük işlerinde yapay zekayı kullan.',Üretmek:'Yapay zekayla içerik, otomasyon ve ürün üret.'};
+const plans={1:10,2:20,3:30};
+const MIN_PER_LESSON=6;
 function notify(message){showResultDialog('Bilgilendirme',message,'Tamam');}
 function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  document.querySelector('#app-dialog')?.remove();
@@ -20,13 +18,21 @@ function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
 }
 function failure(e){let message=e?.message||'İşlem tamamlanamadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postandaki doğrulama bağlantısını aç.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
 async function detachPush(){try{if(!('serviceWorker' in navigator))return;const r=await navigator.serviceWorker.getRegistration();const s=await r?.pushManager.getSubscription();if(s){await client.rpc('nora_push',{p_action:'remove_device',p_data:{endpoint:s.endpoint}});await s.unsubscribe();}}catch{}}
-async function api(action,data={}){const modern=['state','profile','ranking','read_news'].includes(action);const {data:result,error}=await client.rpc(modern?'yz101_app':'yz101_api',{p_action:action,p_data:data});if(error)throw error;return result;}
-async function loadState(){const r=await api('state');state={...r,pilot_progress:r.progress,progress:(r.progress||[]).filter(x=>x.completed).map(x=>({module_id:x.task_id})),modules:COURSE.map(c=>{const l=LESSONS.find(x=>x.id===c.id);return {id:c.id,level:c.level,module_no:c.n,title:c.title,benefit:l?l.objective:'',soon:!l,score:100};}),lesson_unlock_at:r.access?.cooldown_until};serverOffset=Date.parse(r.access?.server_now||new Date().toISOString())-Date.now();}
-async function reload(){await loadState();render();}
-const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,onExit:()=>{page='home';render();window.scrollTo(0,0);}});
-const courseGroups=['Başlangıç','Orta','İleri'];const goalSection={Anlamak:'Başlangıç',Kullanmak:'Orta',Üretmek:'İleri'};
-const goalTotal=u=>GOAL_TOTAL[u?.goal]||COURSE_TOTAL;
-const courseLevel=()=>state.modules.find(m=>!state.progress.some(p=>p.module_id===m.id))?.level||'İleri';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function coach(action,data={}){const {data:r,error}=await client.rpc('yz101_coach',{p_action:action,p_data:data});if(error)throw error;return r;}
+async function loadState(){state=await coach('state');serverOffset=Date.parse(state.server_now)-Date.now();return state;}
+const nowMs=()=>Date.now()+serverOffset;
+const rows=()=>state?.lessons||[];
+const row=id=>rows().find(x=>x.task_id===id);
+const isLocked=r=>!!r?.locked_until&&Date.parse(r.locked_until)>nowMs();
+const titleOf=id=>COURSE.find(c=>c.id===id)?.title||id;
+const goalCount=()=>GOAL_TOTAL[state?.profile?.goal]||10;
+const doneCount=()=>rows().filter(r=>r.completed).length;
+function nextLesson(){const open=rows().filter(r=>r.published&&!r.completed);return open.find(r=>!isLocked(r)&&!r.listed)||open.find(r=>!isLocked(r))||null;}
+function nextLocked(){return rows().filter(r=>r.published&&!r.completed&&isLocked(r)).sort((a,b)=>Date.parse(a.locked_until)-Date.parse(b.locked_until))[0]||null;}
+function weeksLeft(){const left=Math.max(0,goalCount()-Math.min(doneCount(),goalCount())),min=plans[state?.profile?.daily_plan]||20;return Math.max(1,Math.ceil(left*MIN_PER_LESSON/min/7));}
+const firstKey=()=>'yz101_celebrated_'+(session?.user?.id||'');
+const clock=until=>`<span class="countdown" data-until="${esc(until)}">--:--:--</span>`;
 let deferredInstall=null;
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -42,191 +48,246 @@ function installCard(dismissible){
  const close=dismissible?'<button type="button" class="text install-close" data-action="install-off" aria-label="Kapat">Şimdi değil</button>':'';
  return '<section class="card install-card" id="install-card"><strong>Ana ekranına ekle</strong><p class="muted">Tek dokunuşla aç, günlük ders bildirimini al.</p>'+installBody()+close+'</section>';
 }
-function installPopupBody(){return '<h2>Uygulamayı ana ekranına ekle</h2><p class="muted">Tek dokunuşla aç. Bildirimler de böyle çalışır.</p>'+installBody()+'<button type="button" class="text" data-pop="off">Şimdi değil</button>';}
-function maybeInstallPopup(){
- if(isStandalone()||document.getElementById('install-pop'))return;
- try{const t=Number(localStorage.getItem('yz101_install_off')||0);if(t&&Date.now()-t<3*864e5)return;if(sessionStorage.getItem('yz101_install_seen'))return;sessionStorage.setItem('yz101_install_seen','1');}catch{}
- setTimeout(()=>{
-  if(page!=='home'||document.getElementById('install-pop')||isStandalone())return;
-  const d=document.createElement('dialog');d.id='install-pop';d.className='install-pop';d.innerHTML='<div class="install-pop-body">'+installPopupBody()+'</div>';
-  d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
-   if(b.dataset.pop==='off'){try{localStorage.setItem('yz101_install_off',String(Date.now()));}catch{}d.close();d.remove();}
-   else if(b.dataset.action==='install'&&deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;d.close();d.remove();}
-  });
-  document.body.append(d);d.showModal();
- },1500);
-}
-let setupStep='install';
-function renderSetup(){
- updateChrome();
- if(setupStep==='install'&&isStandalone())setupStep='notify';
- if(setupStep==='install'){root.innerHTML='<section class="card auth setup" id="install-card"><span class="eyebrow">Kurulum · 1/2</span><h1>Uygulamayı ana ekranına ekle</h1><p class="muted">Uygulama gibi açılır. Bildirimler de böyle çalışır.</p>'+installBody()+'<button class="primary wide actions" data-action="setup-next">Devam et</button><button class="text" data-action="setup-next">Şimdi değil</button></section>';}
- else{const iosWeb=isIOS()&&!isStandalone();root.innerHTML='<section class="card auth setup"><span class="eyebrow">Kurulum · 2/2</span><h1>Dersin hazır olunca haber verelim</h1><p class="muted">Günde bir hatırlatma. İstediğin zaman kapatabilirsin.</p>'+(iosWeb?'<p class="muted install-note">iPhone\'da bildirimler için önce uygulamayı ana ekrana ekle, sonra Hesap sayfasından aç.</p>':'<a class="button primary wide" href="bildirimler.html?start=1">Bildirimleri aç</a>')+'<button class="'+(iosWeb?'primary wide actions':'text')+'" data-action="setup-done">'+(iosWeb?'Derslere başla':'Şimdi değil')+'</button></section>';}
-}
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const pb=document.querySelector('#install-pop .install-pop-body');if(pb)pb.innerHTML=installPopupBody();const c=document.getElementById('install-card');if(c){const t=document.createElement('div');t.innerHTML=installCard(!!c.querySelector('.install-close'));c.replaceWith(t.firstChild);}});
-window.addEventListener('appinstalled',()=>{deferredInstall=null;document.getElementById('install-card')?.remove();});
 const mascots={fox:{name:'Tilki',color:'#f3b579'},owl:{name:'Baykuş',color:'#b3a1db'},cat:{name:'Kedi',color:'#e4b5cf'},panda:{name:'Panda',color:'#b4d7c5'}};
 function avatarId(){const id=session?.user?.user_metadata?.yz101_mascot;return mascots[id]?id:'fox';}
 function mascot(id){if(!mascots[id])id='fox';const m=mascots[id];let ears=id==='panda'?'<circle cx="17" cy="20" r="8" fill="#5E4A32"/><circle cx="47" cy="20" r="8" fill="#5E4A32"/>':'<path d="M14 28L12 11L29 22M50 28L52 11L35 22" fill="'+m.color+'"/>';
 return `<svg viewBox="0 0 64 64" role="img" aria-label="${m.name}" xmlns="http://www.w3.org/2000/svg"><g stroke="#4F3E2A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ears}<rect x="12" y="19" width="40" height="35" rx="18" fill="${m.color}"/>${id==='owl'?'<circle cx="24" cy="34" r="10" fill="#fff"/><circle cx="40" cy="34" r="10" fill="#fff"/>':''}${id==='panda'?'<ellipse cx="24" cy="34" rx="7" ry="9" fill="#5E4A32"/><ellipse cx="40" cy="34" rx="7" ry="9" fill="#5E4A32"/>':''}<circle cx="24" cy="34" r="3" fill="${id==='panda'?'#fff':'#4F3E2A'}" stroke="none"/><circle cx="40" cy="34" r="3" fill="${id==='panda'?'#fff':'#4F3E2A'}" stroke="none"/><path d="M26 44Q32 49 38 44" fill="none"/>${id==='fox'||id==='cat'?'<path d="M29 39L32 41L35 39"/>':''}</g></svg>`;}
 
-let selectedLevel=null;
-let restoringHistory=false;
-function syncNavigation(){
- const snapshot={yz101:true,page,selectedLevel,lesson,reading,exam};
- if(!history.state?.yz101){history.replaceState({yz101:true,page:'home'},'',location.pathname+location.search);}
- if(!restoringHistory&&(history.state.page!==page||history.state.selectedLevel!==selectedLevel))history.pushState(snapshot,'',location.pathname+location.search);
+/* ---------- Gezinme ---------- */
+const mainPages=['home','journey','profile'];
+let restoring=false;
+function go(p,opts={}){
+ lessonView.keepDraft();page=p;
+ if(!restoring&&opts.push!==false)history.pushState({yz101:true,page:p},'',location.pathname);
+ render();window.scrollTo({top:0,left:0,behavior:'instant'});
 }
-window.addEventListener('popstate',event=>{
- if(!session||recovery||lessonView.busy())return;lessonView.keepDraft();
- const route=event.state?.yz101?event.state:{page:'home'};
- page=route.page||'home';selectedLevel=route.selectedLevel||null;lesson=route.lesson||null;reading=route.reading||null;exam=route.exam||null;
- restoringHistory=true;render();restoringHistory=false;window.scrollTo(0,0);
+window.addEventListener('popstate',e=>{
+ if(!session||!state?.profile||lessonView.busy())return;lessonView.keepDraft();
+ const p=e.state?.yz101?e.state.page:'home';page=mainPages.includes(p)?p:'home';
+ restoring=true;render();restoring=false;window.scrollTo(0,0);
 });
-function updateChrome(){
- document.body.dataset.page=page;
- const profile=document.querySelector('#header-profile');
- if(profile){profile.hidden=!session||!state?.profile||page==='profile';profile.innerHTML=mascot(avatarId());}
+const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Bugün','☀️'],['journey','Yolculuğum','🧭'],['profile','Profil','🙂']].map(([p,t,i])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${t}</button>`).join('')}</nav>`;
+
+/* ---------- E-posta kodu (anonim -> kalıcı hesap) ---------- */
+function codeDialog({title,intro,send,verify,done}){
+ return new Promise((resolve,reject)=>{
+  const d=document.createElement('dialog');d.className='app-result-dialog gate';d.addEventListener('cancel',e=>e.preventDefault());
+  let email='';
+  const msg=t=>{const m=d.querySelector('.gate-msg');if(m)m.textContent=t||'';};
+  const busy=v=>d.querySelectorAll('button,input').forEach(x=>x.disabled=v);
+  const stepEmail=()=>{
+   d.innerHTML=`<h2>${esc(title)}</h2><p>${esc(intro)}</p><form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>`;
+   d.querySelector('form').onsubmit=async e=>{e.preventDefault();email=new FormData(e.target).get('email').trim().toLowerCase();busy(true);try{await send(email);stepCode();}catch(err){busy(false);msg(gateError(err));}};
+   d.querySelector('input').focus();
+  };
+  const stepCode=()=>{
+   d.innerHTML=`<h2>Kodu yaz</h2><p>${esc(email)} adresine 6 haneli bir kod gönderdik.</p><form><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="Kod" class="code-input"><p class="gate-msg" role="alert"></p><button class="primary wide">Onayla</button></form><button type="button" class="text" data-g="resend">Kodu tekrar gönder</button><button type="button" class="text" data-g="change">E-postayı değiştir</button>`;
+   d.querySelector('form').onsubmit=async e=>{e.preventDefault();busy(true);try{await verify(email,new FormData(e.target).get('code').trim());await done();d.close();d.remove();resolve();}catch(err){busy(false);msg(/expired|invalid|token/i.test(err?.message||'')?'Kod hatalı ya da süresi dolmuş.':gateError(err));}};
+   d.querySelector('[data-g="resend"]').onclick=async()=>{busy(true);try{await send(email);msg('Yeni kod gönderildi.');}catch(err){msg(gateError(err));}busy(false);};
+   d.querySelector('[data-g="change"]').onclick=stepEmail;
+   d.querySelector('input').focus();
+  };
+  document.body.append(d);d.showModal();stepEmail();
+ });
 }
-document.querySelector('#header-profile')?.addEventListener('click',()=>{if(!state?.profile||lessonView.busy())return;lessonView.keepDraft();page='profile';render();window.scrollTo(0,0);});
-const back=()=>'';
-function tabs(){return page==='home'?'':back(page==='lessons'?'journey':page==='ranking'?'profile':'home');}
-function progressBar(done,total){return `<progress max="${total||1}" value="${done}" aria-label="${done} / ${total} ders tamamlandı"></progress>`;}
-function journeySummary(u,progress,current){const done=state.progress.length;return `<button class="journey-summary" data-page="journey" aria-label="Öğrenme yolculuğunu aç"><span class="compact-progress"><strong>${esc(courseLevel())}</strong><span>${done}/${goalTotal(u)} ders</span><span class="points">${esc(state.points)} puan</span></span><span class="journey-link">Yolculuğunu gör</span>${progressBar(done,goalTotal(u))}</button>`;}
-function journey(u,progress,current){const active=courseGroups.indexOf(courseLevel()),done=state.progress.length>=goalTotal(u);return `<h1>Yolculuğum</h1><p class="muted">Hedefin: ${esc(u.goal)}</p><div class="journey-path">${courseGroups.map((level,i)=>{const modules=state.modules.filter(m=>m.level===level),count=modules.filter(m=>progress.has(m.id)).length;return `<button class="milestone ${count===modules.length?'done':i===active?'current':i===active+1?'upcoming':''}" data-level="${level}" ${i===active?'aria-current="step"':''}><span class="step-dot">${count===modules.length?'✓':i+1}</span><span class="step-body"><strong>${level}</strong>${i===active&&!done?'<span class="pill">Buradasın</span>':''}<small>${count} / ${modules.length} ders</small>${level===goalSection[u.goal]?'<small class="goal-mark">Hedefin burada</small>':''}${progressBar(count,modules.length)}<span class="chevron">›</span></span></button>`;}).join('')}</div><aside class="journey-tip">${done?`${goalTotal(u)} derslik hedefini tamamladın. Tamamladığın dersleri gözden geçirebilirsin.`:'Bir dersi tamamladığında yeni ders 24 saat sonra açılır.'}</aside>`;}
-function auth(mode='welcome',message=''){
- page=mode;updateChrome();if(mode==='welcome'){root.innerHTML=`<section class="auth welcome"><span class="welcome-mark"><img src="app-icon.svg" alt="" width="80" height="80"></span><h1>Günde bir ders,<br>60 günde yapay zeka.</h1><p class="muted">Sıfırdan başla.<br>Her gün küçük bir adım ilerle.</p><button class="primary wide" data-action="sample">Başla</button><button class="secondary wide actions" data-action="login">Hesabım var</button></section>`;return;}const reset=mode==='forgot',signup=mode==='signup';
- root.innerHTML=`<section class="card auth"><h1>${reset?'Şifreni yenile':signup?'Ücretsiz hesap aç':'Tekrar hoş geldin'}</h1>${signup?'<p class="muted auth-caption">E-posta ve şifrenle devam et.</p>':''}${message?`<div class="notice-inline">${esc(message)}</div>`:''}<form id="auth-form"><label>E-posta<input name="email" type="email" required autocomplete="email"></label>${reset?'':`<label>Şifre<input name="password" type="password" required minlength="6" autocomplete="${signup?'new-password':'current-password'}"></label>`}<button class="primary wide">${reset?'Bağlantı gönder':signup?'Hesap aç':'Giriş yap'}</button></form><div class="actions row">${reset?'<button class="text" data-action="login">Girişe dön</button>':`<button class="text" data-action="${signup?'login':'signup'}">${signup?'Zaten hesabım var':'Hesap aç'}</button><button class="text" data-action="forgot">Şifremi unuttum</button>`}</div><p class="legal-links"><a href="gizlilik-politikasi.html">Gizlilik Politikası</a> · <a href="kullanim-kosullari.html">Kullanım Koşulları</a></p></section>`;
+function gateError(e){const m=e?.message||'';if(/already|registered|exists/i.test(m))return 'Bu e-posta başka bir hesapta kayıtlı. Başka bir e-posta dene.';if(/rate|seconds|too many/i.test(m))return 'Çok sık denedin. Biraz bekleyip tekrar dene.';if(/invalid.*email|valid email/i.test(m))return 'E-posta adresi geçersiz.';if(/not found|signups not allowed|user/i.test(m))return 'Bu e-postayla kayıtlı hesap bulunamadı.';return 'İşlem tamamlanamadı. Tekrar dene.';}
+function emailGate(){
+ if(!state?.account?.anonymous)return Promise.resolve();
+ return codeDialog({title:'İlerlemeni kaydet',intro:'E-postanı yaz. Telefonunu değiştirsen de kaldığın yerden devam edersin.',
+  send:async email=>{const {error}=await client.auth.updateUser({email});if(error)throw error;},
+  verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email_change'});if(error)throw error;if(data?.session)session=data.session;},
+  done:async()=>{await loadState();}});
 }
-function resetScreen(){root.innerHTML=`<section class="card auth"><h1>Şifreni yenile</h1><form id="reset-form"><label>Şifre<input name="password" type="password" minlength="6" required autocomplete="new-password" placeholder="En az 6 karakter"></label><label>Tekrar<input name="repeat" type="password" minlength="6" required autocomplete="new-password"></label><button class="primary wide">Kaydet</button></form></section>`;}
-function onboarding(){page='onboarding';updateChrome();let known='';try{known=localStorage.getItem('yz101_guest_level')||'';}catch{}
- root.innerHTML=`<section class="card auth"><h1>${known?'Hesabın hazır':'Yolculuğunu seç'}</h1>${known?'<p class="muted">Şimdi bir kullanıcı adı ve hedef seç.</p>':''}<form id="enroll-form"><label>Kullanıcı adı<input name="username" required minlength="2" maxlength="40" autocomplete="nickname"></label><fieldset class="goal-choices"><legend>Yapay zeka ile ne yapmak istiyorsun?</legend>${goals.map((g,i)=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" required><span><strong>${g}</strong><small>${['10 ders · temelleri öğren','30 ders · Anlamak dahil, günlük işinde kullan','60 ders · hepsi dahil, kendi çözümlerini üret'][i]}</small></span></label>`).join('')}</fieldset><button class="primary wide" name="start" value="begin">Başla</button></form><button class="text" data-action="logout">Çıkış yap</button></section>`;
- const fs=root.querySelector('.goal-choices'),mark=()=>{const idx=goals.indexOf(fs.querySelector('input:checked')?.value);fs.querySelectorAll('.goal-choice').forEach((l,i)=>{l.classList.toggle('in',i<=idx);l.querySelector('strong').dataset.tick=i<=idx?'✓':'';});};fs.addEventListener('change',mark);mark();}
+
+/* ---------- Karşılama, giriş ---------- */
+function welcome(){
+ root.innerHTML=`<section class="auth welcome"><span class="welcome-mark"><img src="app-icon.svg" alt="" width="80" height="80"></span><h1>Yapay zekayı<br>koçunla öğren.</h1><p class="muted">Kısa dersler. Her gün küçük bir adım.</p><button class="primary wide" data-action="start">Başla</button><button class="text actions" data-action="login">Hesabım var</button></section>`;
+}
+async function startAnonymous(){
+ if(!session){const {data,error}=await client.auth.signInAnonymously({options:{data:{origin_app:'yz101'}}});if(error)throw error;session=data.session;}
+ await loadState();tun={goal:null,plan:2};page=state.profile?'home':'goal';
+ state.profile?go('home'):render();
+}
+async function loginFlow(){
+ await codeDialog({title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana kod gönderelim.',
+  send:async email=>{const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;},
+  verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});if(error)throw error;session=data.session;},
+  done:async()=>{await loadState();}});
+ page=state.profile?'home':'goal';state.profile?go('home'):render();
+}
+
+/* ---------- Tünel ---------- */
+let tun={goal:null,plan:2};
+const tickGoals=()=>{const fs=root.querySelector('.goal-choices');if(!fs)return;const idx=goals.indexOf(fs.querySelector('input:checked')?.value);fs.querySelectorAll('.goal-choice').forEach((l,i)=>{l.classList.toggle('in',i<=idx);l.querySelector('strong').dataset.tick=idx>=0&&i<=idx?'✓':'';});root.querySelector('[data-action="goal-next"]').disabled=idx<0;};
+function goalScreen(){
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Hedefin</span><h1>Yapay zekayla ne yapmak istiyorsun?</h1><fieldset class="goal-choices">${goals.map(g=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" ${tun.goal===g?'checked':''}><span><strong>${g}${g==='Üretmek'?' <em class="pill">Önerilen</em>':''}</strong><small class="muted">${goalInfo[g]}</small></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="goal-next" disabled>Devam</button></section>`;
+ root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
+}
+function planScreen(){
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Günlük süre</span><h1>Her gün ne kadar ayırabilirsin?</h1><fieldset class="goal-choices">${Object.entries(plans).map(([k,m])=>`<label class="goal-choice"><input type="radio" name="plan" value="${k}" ${String(tun.plan)===k?'checked':''}><span><strong>Günde ${m} dakika</strong></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="plan-next">Devam</button></section>`;
+ root.querySelector('.goal-choices').addEventListener('change',e=>{tun.plan=Number(e.target.value);});
+}
+function journeyIntro(){
+ const lv=['Başlangıç','Orta','İleri'].slice(0,goals.indexOf(state.profile.goal)+1);
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><h1>Hedefin: ${esc(state.profile.goal)}</h1><p>Günde ${plans[state.profile.daily_plan]||20} dakikayla yaklaşık <b>${weeksLeft()} hafta</b>.</p><ol class="path">${lv.map(l=>`<li>${l}</li>`).join('')}</ol><button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+}
+function inviteScreen(){
+ const n=nextLesson();
+ if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler hazır olunca burada olacak.</p><button class="primary wide actions" data-action="to-home">Devam</button></section>`;return;}
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="secondary wide" data-action="invite-list" data-task="${n.task_id}">Ders listeme ekle</button><button class="text actions" data-action="placement">Seviyemi koç belirlesin</button></section>`;
+}
+
+/* ---------- Seviye testi ---------- */
+let pl=null;
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const stageLevels=['Başlangıç','Orta','İleri'];
+function buildPlacement(stage){
+ const level=stageLevels[stage-1]||'İleri';
+ const pool=LESSONS.filter(l=>l.level===level&&row(l.id)?.published);
+ const items=shuffle(pool).slice(0,4).map(l=>{const q=Math.floor(Math.random()*l.questions.length);return {task:l.id,q,prompt:l.questions[q].prompt,options:l.questions[q].options};});
+ pl={stage,items,i:0,answers:[]};
+}
+async function submitPlacement(){
+ const r=await client.rpc('yz101_placement',{p_stage:pl.stage,p_answers:pl.answers});if(r.error)throw r.error;const x=r.data;
+ if(!x.done&&x.next){buildPlacement(x.next);if(!pl.items.length){await submitPlacement();return;}placementQuestion();return;}
+ await loadState();pl=null;placementResult(x);
+}
+function placementQuestion(){
+ const it=pl.items[pl.i];
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Soru ${pl.i+1}</span><h1>${esc(it.prompt)}</h1><div class="options">${it.options.map((o,k)=>`<button class="option-btn" data-pa="${k}">${esc(o)}</button>`).join('')}<button class="text" data-pa="-1">Bilmiyorum</button></div></section>`;
+}
+async function placementAnswer(k){
+ const it=pl.items[pl.i];pl.answers.push({task:it.task,q:it.q,a:k<0?null:k});pl.i++;
+ if(pl.i<pl.items.length){placementQuestion();window.scrollTo(0,0);return;}
+ root.innerHTML='<section class="card auth"><p>Sonuç hazırlanıyor…</p></section>';await submitPlacement();
+}
+function placementResult(x){
+ const lvl=x.result_level,pts=x.points??(lvl==='Orta'?100:0);
+ const copy=lvl==='Orta'?['Başlangıç derslerine ihtiyacın yok.',`+${pts} puan`,'Seni Orta seviyeden başlatıyorum.']:lvl==='İleri'?['Başlangıç ve Orta derslerine ihtiyacın yok.',`+${pts} puan`,'Seni İleri seviyeden başlatıyorum.']:['Temelden başlıyoruz.','','Zor olmayacak.'];
+ page='place-result';
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>${esc(lvl||'Başlangıç')}</h1><p>${esc(copy[0])}</p>${copy[1]?`<p class="lesson-reward">${esc(copy[1])}</p>`:''}<p>${esc(copy[2])}</p><button class="primary wide actions" data-action="place-next">Devam</button></section>`;
+}
+
+/* ---------- Kutlama ve program ---------- */
+function celebrateScreen(points){
+ page='celebrate';
+ root.innerHTML=`<section class="card auth"><span class="welcome-mark"><img src="app-icon.svg" alt="" width="80" height="80"></span><h1>İlk dersin tamam!</h1><p class="lesson-reward">+${points} puan</p><p class="muted">İlk adım en zoru. Devam ediyoruz.</p>${navigator.share?'<button class="secondary wide" data-action="share">Arkadaşlarınla paylaş</button>':''}<button class="primary wide actions" data-action="celebrate-next">Devam</button></section>`;
+}
+function programScreen(){
+ page='program';
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list"><li><b>Hatırlatmaları aç</b><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody()}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
+}
+/* ---------- Bugün ---------- */
+function greetingLine(){const h=new Date().getHours();return h>=5&&h<12?'Günaydın.':h<18?'İyi günler.':'İyi akşamlar.';}
+function homeView(){
+ const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
+ let card;
+ if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam.</h2><p class="muted">Bugünkü 3 dersini bitirdin. Yarın devam ediyoruz.</p>`;
+ else if(n)card=`<h2>${esc(titleOf(n.task_id))}</h2><p class="muted">${n.listed?'Listendeki ders. Hazırsan başlayalım.':'Bugünün dersi hazır. Başlayalım.'}</p><button class="primary wide" data-lesson="${n.task_id}" data-mode="lesson">Başla</button>`;
+ else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
+ else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Hazır olunca burada göreceksin.</p>`;
+ const listed=rows().filter(r=>r.listed&&!r.completed&&r.published);
+ const done=Math.min(doneCount(),goalCount());
+ return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
+ <section class="card coach-card"><span class="eyebrow">Koç · ${greetingLine()}</span>${card}</section>
+ <section class="card program-card"><strong>Bugün</strong><p>${a.daily_done>0?'✓':'○'} Günün dersi <span class="muted">· 20:00</span></p></section>
+ ${listed.length?`<section class="card"><strong>Ders listem</strong><div class="list-rows">${listed.map(r=>`<button class="settings-row" data-lesson="${r.task_id}" data-mode="lesson">${esc(titleOf(r.task_id))} <span>›</span></button>`).join('')}</div></section>`:''}
+ <section class="card"><strong>Yolculuğun</strong><p class="muted">${done}/${goalCount()} ders · ${esc(u.goal)}</p><progress max="${goalCount()}" value="${done}"></progress><button class="text" data-page="journey">Yolculuğumu gör</button></section>`;
+}
+function journeyView(){
+ const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
+ return `<h1>Yolculuğum</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · yaklaşık ${weeksLeft()} hafta</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${level}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),can=r?.published;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':'·'} ${esc(i.title)} <span>${can?'›':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+}
+function profileView(){
+ const u=state.profile,anon=state.account?.anonymous;
+ return `<h1>Profilim</h1><section class="profile-head"><button type="button" class="avatar large" data-action="choose-mascot" aria-label="Maskot seç" aria-expanded="false" aria-controls="mascot-options">${mascot(avatarId())}</button><div class="profile-identity"><button class="editable-name" data-action="edit-name" aria-label="Kullanıcı adını düzenle" aria-expanded="false" aria-controls="name-editor">${esc(u.username)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button><div class="identity-meta"><span class="points">${esc(state.points)} puan</span></div></div></section>
+ <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="row"><button class="primary">Kaydet</button><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button></div></form>
+ <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
+ ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
+ <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goals.map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
+ <details class="goal-picker"><summary><span>Günlük süre</span><strong>${plans[u.daily_plan]||20} dk</strong></summary><div class="goal-options" role="group">${Object.entries(plans).map(([k,m])=>`<button type="button" data-plan="${k}" aria-pressed="${Number(k)===u.daily_plan}">${m} dk</button>`).join('')}</div></details>
+ <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a><a class="settings-link" href="gizlilik-politikasi.html">Gizlilik Politikası <span>›</span></a><a class="settings-link" href="kullanim-kosullari.html">Kullanım Koşulları <span>›</span></a><a class="settings-link" href="mailto:all.apps.nora@gmail.com">Yardım ve iletişim <span>↗</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section>${installCard(false)}`;
+}
+
+/* ---------- Çizim ---------- */
 function render(){
- clearInterval(countdownTimer);updateChrome();
- if(recovery){resetScreen();return;}if(!session){auth();return;}if(!state){root.innerHTML='<section class="card"><p>Bilgilerin yükleniyor…</p></section>';return;}if(!state.profile){onboarding();return;}
- syncNavigation();
- if(page==='setup'){renderSetup();return;}
-  if(page==='module'){renderModule();return;}if(page==='article'){renderArticle();return;}
- const u=state.profile,progress=new Set(state.progress.map(x=>x.module_id)),current=state.modules.filter(x=>x.level===courseLevel()),next=state.modules.find(x=>!progress.has(x.id));
- let body='';
- if(page==='home'){
- const now=Date.now()+serverOffset,lessonLocked=Date.parse(state.lesson_unlock_at||'')>now,newsLocked=Date.parse(state.news_unlock_at||'')>now,n=state.news[0];
- const clock=(id,until)=>`<span class="countdown" id="${id}" data-until="${esc(until)}">--:--:--</span>`;
- const goalDone=state.progress.length>=goalTotal(u);
-  const lessonDone=goalDone||lessonLocked,newsDone=newsLocked||n?.read;
- const upcoming=!goalDone&&next?.soon;
- const lessonAction=goalDone?'data-page="journey"':upcoming?'data-page="lessons"':next?`data-module="${esc(next.id)}"`:'data-page="lessons"';
- body=`${journeySummary(u,progress,current)}<div class="grid daily-grid"><button type="button" class="card daily-card lesson-card ${lessonDone?'completed':''}" ${lessonAction}><span class="daily-label">Günün dersi <span aria-hidden="true">${lessonDone?'✓':'↗'}</span></span><strong class="daily-title">${goalDone?'Hedefine ulaştın':upcoming?'Yeni dersler hazırlanıyor':lessonDone?(state.access?.reason==='retry'?'Henüz olmadı':'Dersini tamamladın'):next?esc(next.title):'Tüm dersler tamamlandı'}</strong>${goalDone?'<span class="muted">Yolculuğunu görüntüle veya yeni bir hedef seç.</span>':lessonLocked?`<span class="muted">${state.access?.reason==='retry'?'Tekrar denemek için kalan süre':'Sonraki dersine kalan süre'}</span>${clock('lesson-countdown',state.lesson_unlock_at)}`:`<span class="muted">${upcoming?'Sıradaki dersler çok yakında. Dersler listesinden yol haritasına bakabilirsin.':next?esc(next.benefit):'Tebrikler'}</span>`}</button><button type="button" class="card daily-card news-card ${newsDone?'completed':''}" data-page="news"><span class="daily-label">Günün haberi <span aria-hidden="true">${newsDone?'✓':'↗'}</span></span><strong class="daily-title">${newsDone?'Haberini tamamladın':n?esc(n.title):'Yeni haber hazırlanıyor.'}</strong>${newsLocked?`<span class="muted">Sonraki haberine kalan süre</span>${clock('news-countdown',state.news_unlock_at)}`:`<span class="muted">${newsDone?'Yeni haber yarın burada.':n?'Oku, 10 puan kazan.':'Güncel haber yakında burada.'}</span>`}</button></div>`;
- }else if(page==='journey'){
- body=journey(u,progress,current);
- }else if(page==='lessons'){
- const locked=courseGroups.indexOf(selectedLevel||courseLevel())>courseGroups.indexOf(courseLevel());
- body=`<h1>${esc(selectedLevel||courseLevel())}</h1>${locked?`<section class="card locked-level"><span class="pill">Henüz açılmadı</span><h2>Buraya birlikte ilerleyeceğiz.</h2><p class="muted">Bu seviyenin dersleri, önceki dersleri tamamladığında açılacak.</p><button class="primary" data-page="home">Günün dersine dön</button></section>`:'<p class="muted">Dersler</p>'}`+state.modules.filter(m=>m.level===(selectedLevel||courseLevel())).map(m=>`<button class="lesson${m.soon?' soon':''}" data-module="${esc(m.id)}"><span class="num">${progress.has(m.id)?'✓':esc(m.module_no)}</span><span>${esc(m.title)}<small>${m.soon?'Yakında':`${esc(m.level)} · ${esc(m.score)} puan`}</small></span></button>`).join('');
- }else if(page==='news'){
- const n=state.news[0],left=Date.parse(state.news_unlock_at||0)-(Date.now()+serverOffset);
- if(left>0){body='<section class="card auth news-waiting"><span class="pill">✓ +10 puan</span><h1>Bugünlük tamam</h1><p class="muted">Sonraki okuma hakkına kalan süre</p><strong id="news-countdown" style="font-size:36px;font-variant-numeric:tabular-nums"></strong></section>';}
- else if(n&&!n.read){body=`<h1>Günün haberi</h1><article class="card news-article"><p class="news-source"><a href="${esc(safeUrl(n.source_url)||'#')}" target="_blank" rel="noopener noreferrer" ${n.source_url?'':'hidden'}>${esc(n.source_name||'Haber kaynağı')} ↗</a><span class="muted"> · ${esc(n.source_published_at?new Date(n.source_published_at).toLocaleDateString('tr-TR'):n.publish_date)}</span></p><h2>${esc(n.title)}</h2><div class="content news-full-text">${esc(n.full_text||n.summary)}</div><button class="primary wide actions news-read-button" data-action="read-today">Okudum · 10 puan</button></article>`;}
- else{body='<section class="card auth news-completed"><h1>'+ (n?.read?'Bugünlük tamam':'Yeni haber hazırlanıyor.')+'</h1><p class="muted">'+(n?.read?'Bugünün haberini okudun. Yeni haber yarın burada.':'Güncel bir yapay zeka haberi yayımlandığında burada göreceksin.')+'</p><button class="secondary" data-action="refresh-news">Yenile</button></section>';}
- }else if(page==='ranking'){
- body='<h1>Sıralama</h1><div class="ranking-periods" role="group" aria-label="Sıralama dönemi"><button data-ranking="all" aria-pressed="true">Tüm zamanlar</button><button data-ranking="week" aria-pressed="false">Bu hafta</button><button data-ranking="month" aria-pressed="false">Bu ay</button></div><section class="card actions" id="ranking-content">Yükleniyor…</section>';
- }else if(page==='legal'){
- body='<h1>Hukuki metinler</h1><p class="muted">Web sürümü · 13 Kasım 2026</p><section class="settings"><a class="settings-link" href="gizlilik-politikasi.html">Gizlilik Politikası <span>›</span></a><a class="settings-link" href="kullanim-kosullari.html">Kullanım Koşulları <span>›</span></a></section>';
- }else if(page==='account'){
- body=`<h1>Hesap ve destek</h1>${installCard(false)}<section class="settings"><button data-action="forgot">Şifremi yenile <span>›</span></button><a class="settings-link" href="mailto:all.apps.nora@gmail.com">Yardım ve iletişim <span>↗</span></a><button data-page="legal">Hukuki metinler <span>›</span></button><button data-action="logout">Çıkış yap <span>↗</span></button><details class="delete-profile"><summary>YZ101 profilimi sil</summary><p>Ders ve puan kayıtların silinir. Aynı e-postayla yeniden başlayabilirsin.</p><form id="delete-form"><label>Silmek için YZ101 yaz<input name="confirm" required pattern="YZ101" autocomplete="off"></label><button class="danger">YZ101 profilimi kalıcı sil</button></form></details></section>`;
- }else if(page==='profile'){
- body=`<h1>Profilim</h1><section class="profile-head"><button type="button" class="avatar large" data-action="choose-mascot" aria-label="Maskot seç" aria-expanded="false" aria-controls="mascot-options">${mascot(avatarId())}</button><div class="profile-identity"><button class="editable-name" data-action="edit-name" aria-label="Kullanıcı adını düzenle" aria-expanded="false" aria-controls="name-editor">${esc(u.username)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button><div class="identity-meta"><span class="pill">Seviye: ${esc(courseLevel())}</span><span class="points">${esc(state.points)} puan</span></div></div></section><form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><input type="hidden" name="goal" value="${esc(u.goal)}"><div class="row"><button class="primary">Kaydet</button><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button></div></form><div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div><section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal||'Anlamak')}</strong></summary><div class="goal-options" role="group" aria-label="Öğrenme hedefin">${goals.map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details><a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a><button data-page="ranking">Sıralama <span>›</span></button><button data-page="account">Hesap ve destek <span>›</span></button><div class="membership"><strong>${u.is_premium?'Premium üyelik':'Ücretsiz üyelik'}</strong><small>${'Her 24 saatte bir ders'}</small></div></section>`;
- }
- root.innerHTML=tabs()+body;if(page==='home')maybeInstallPopup();
- const clocks=[['lesson-countdown',state.lesson_unlock_at],['news-countdown',state.news_unlock_at]].filter(([id])=>document.querySelector('#'+id));
- if(clocks.length){let expired=false;const tick=()=>{for(const [id,until] of clocks){const el=document.querySelector('#'+id);if(!el)continue;const sec=Math.max(0,Math.ceil((Date.parse(until)-Date.now()-serverOffset)/1000));el.textContent=[Math.floor(sec/3600),Math.floor(sec%3600/60),sec%60].map(x=>String(x).padStart(2,'0')).join(':');if(sec===0&&!expired){expired=true;clearInterval(countdownTimer);reload().catch(failure);}}};countdownTimer=setInterval(tick,1000);tick();}
- if(page==='ranking')loadRanking('all').catch(failure);
+ clearInterval(countdownTimer);document.body.dataset.page=page;
+ if(!session||!state){welcome();return;}
+ if(!state.profile&&!['goal','plan','journey-intro'].includes(page))page='goal';
+ const tunnel={goal:goalScreen,plan:planScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
+ if(tunnel[page]){tunnel[page]();return;}
+ if(['place','place-result','celebrate','lesson'].includes(page))return;
+ const v={home:homeView,journey:journeyView,profile:profileView}[page]||homeView;
+ root.innerHTML=v()+nav();
+ const els=[...root.querySelectorAll('.countdown')];
+ if(els.length){let fired=false;const tick=()=>{for(const el of els){const s=Math.max(0,Math.ceil((Date.parse(el.dataset.until)-nowMs())/1000));el.textContent=[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');if(s===0&&!fired){fired=true;clearInterval(countdownTimer);loadState().then(render).catch(()=>{});}}};tick();countdownTimer=setInterval(tick,1000);}
 }
-let rankingRequest=0;
-async function loadRanking(period){const request=++rankingRequest;document.querySelectorAll('[data-ranking]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ranking===period)));const rows=await api('ranking',{period});if(request!==rankingRequest||page!=='ranking')return;const node=document.querySelector('#ranking-content');if(!node)return;node.innerHTML=rows.map((r,i)=>`<div class="rank ${r.is_me?'me':''}"><span><b class="rank-number">${i+1}</b> ${esc(r.username)} ${r.is_me?'(Sen)':''}</span><strong>${esc(r.points)} puan</strong></div>`).join('')||'<p>Henüz kayıt bulunmuyor.</p>';}
-function options(text){try{const a=JSON.parse(text);if(Array.isArray(a))return a.map(String);}catch{}return String(text||'').split('|').map(x=>x.trim()).filter(Boolean);}
-function question(id,title,opts){return `<fieldset class="question"><legend>${esc(title)}</legend>${options(opts).map(x=>`<label class="option"><input type="radio" name="${esc(id)}" value="${esc(x)}" required><span>${esc(x)}</span></label>`).join('')}</fieldset>`;}
-function lessonResult(passed,message){
- showResultDialog(passed?'Tebrikler':'Tekrar dene',message,passed?'Devam et':'Tekrar dene',passed?'success':'error');
- const dialog=document.querySelector('#app-dialog');
- dialog?.querySelector('button')?.addEventListener('click',()=>{
-  if(!passed){const form=document.querySelector('#module-form');form?.reset();form?.querySelector('input')?.focus();}
-  else window.scrollTo(0,0);
- },{once:true});
+
+/* ---------- Ders ekranı ---------- */
+const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
+ onExit:()=>go('home'),
+ gate:()=>emailGate(),
+ onCompleted:async(task,info)=>{
+  await loadState();
+  let first=false;try{first=!localStorage.getItem(firstKey());if(first)localStorage.setItem(firstKey(),'1');}catch{}
+  if(first){celebrateScreen(info.points);window.scrollTo(0,0);}else go('home');
+ },
+ onList:async task=>{try{await emailGate();await coach('list_add',{task});await loadState();go('home');notify('Dersi listene ekledim.');}catch(e){failure(e);}}
+});
+function openLesson(id,mode){
+ if(!rows().some(r=>r.task_id===id&&r.published)){notify('Bu ders henüz hazır değil.');return;}
+ page='lesson';history.pushState({yz101:true,page:'lesson'},'',location.pathname);
+ if(!lessonView.open(id,{mode})){page='home';render();}
+ window.scrollTo(0,0);
 }
-function renderModule(){if(!lessonView.open(lesson.index)){page='home';render();}}
-function renderArticle(){root.innerHTML=`<article class="card"><p><a href="${esc(safeUrl(reading.source_url)||'#')}" target="_blank" rel="noopener noreferrer" ${reading.source_url?'':'hidden'}>${esc(reading.source_name||'Haber kaynağı')} ↗</a> <span class="muted">· ${esc(reading.source_published_at?new Date(reading.source_published_at).toLocaleDateString('tr-TR'):reading.publish_date)}</span></p><h1>${esc(reading.title)}</h1><div class="content">${esc(reading.summary)}</div><button class="primary wide actions" data-action="read-news" ${reading.read?'disabled':''}>${reading.read?'Okundu':'Okudum · 10 puan'}</button></article>`;}
-async function execute(task,element){if(working||lessonView.busy())return;working=true;const buttons=element?.querySelectorAll?.('button')||[];buttons.forEach(b=>b.disabled=true);try{await task();}catch(e){failure(e);}finally{working=false;buttons.forEach(b=>b.disabled=false);}}
-root.addEventListener('click',event=>{const b=event.target.closest('button');if(b?.closest('[data-lesson-view]'))return;if(!b||b.type==='submit'&&b.closest('form'))return;
+
+/* ---------- Olaylar ---------- */
+async function execute(task,element){if(working||lessonView.busy())return;working=true;const bs=element?.querySelectorAll?.('button')||[];bs.forEach(b=>b.disabled=true);try{await task();}catch(e){failure(e);}finally{working=false;bs.forEach(b=>{if(b.isConnected)b.disabled=false;});}}
+root.addEventListener('click',event=>{
+ const b=event.target.closest('button');if(!b||b.closest('[data-lesson-view]')||b.type==='submit'&&b.closest('form'))return;
  execute(async()=>{
-  if(b.dataset.goal){if(!goals.includes(b.dataset.goal))return;await api('profile',{username:state.profile.username,goal:b.dataset.goal});await reload();notify('Öğrenme hedefin güncellendi.');return;}
-  if(b.dataset.mascot){if(!mascots[b.dataset.mascot])return;const {data,error}=await client.auth.updateUser({data:{yz101_mascot:b.dataset.mascot}});if(error)throw error;session={...session,user:data.user};render();notify('Maskotun kaydedildi.');return;}
-  if(b.dataset.level){if(!courseGroups.includes(b.dataset.level))return;selectedLevel=b.dataset.level;page='lessons';render();window.scrollTo(0,0);return;}
-  if(b.dataset.page){lessonView.keepDraft();page=b.dataset.page;render();window.scrollTo({top:0,left:0,behavior:'instant'});return;}
-  if(b.dataset.module){const index=LESSONS.findIndex(l=>l.id===b.dataset.module);if(index<0){if(COURSE.some(c=>c.id===b.dataset.module))notify('Bu derse henüz gelmedin. Önceki dersleri tamamladıkça yeni dersler açılır.');return;}lesson={id:b.dataset.module,index};selectedLevel=LESSONS[index].level;page='module';render();window.scrollTo(0,0);return;}
-  if(b.dataset.news){reading=state.news.find(n=>n.id===b.dataset.news);page='article';render();window.scrollTo(0,0);return;}
-  if(b.dataset.ranking){await loadRanking(b.dataset.ranking);return;}
-  const a=b.dataset.action;
-  if(a==='edit-name'||a==='cancel-name'){const form=document.querySelector('#profile-form');form.hidden=a==='cancel-name'||!form.hidden;document.querySelector('[data-action="edit-name"]').setAttribute('aria-expanded',String(!form.hidden));if(!form.hidden){const input=document.querySelector('#name-editor');input.focus();input.select();}return;}
-  if(a==='choose-mascot'){const panel=document.querySelector('#mascot-options');panel.hidden=!panel.hidden;b.setAttribute('aria-expanded',String(!panel.hidden));return;}
-  if(a==='refresh-news'){await reload();return;}
-  if(a==='read-today'){const n=state.news[0];if(!n)return;await api('read_news',{id:n.id});page='news';await reload();window.scrollTo({top:0,left:0,behavior:'instant'});return;}
-  if(a==='install'){if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;document.getElementById('install-card')?.remove();}return;}
-  if(a==='setup-next'){setupStep='notify';renderSetup();window.scrollTo(0,0);return;}
-  if(a==='setup-done'){page='home';await reload();window.scrollTo(0,0);return;}
-  if(a==='install-off'){try{localStorage.setItem('yz101_install_off','1');}catch{}document.getElementById('install-card')?.remove();return;}
-  if(a==='sample'){page='sample';updateChrome();window.mountYZ101Start(root,{onBack:()=>auth('welcome'),onSignup:()=>auth('signup'),onLogin:()=>auth('login')});window.scrollTo(0,0);return;}
-  if(['login','signup','forgot'].includes(a)){auth(a);return;}
-  if(a==='logout'){await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;recovery=false;auth();}
-  if(a==='read-news'){const r=await api('read_news',{id:reading.id});page='news';await reload();notify(r.points?`Okundu. ${r.points} puan kazandın.`:'Bu haber daha önce okunmuş.');}
+  const d=b.dataset;
+  if(d.pa!==undefined){await placementAnswer(Number(d.pa));return;}
+  if(d.lesson){openLesson(d.lesson,d.mode||'lesson');return;}
+  if(d.page){go(d.page);return;}
+  if(d.goal){await coach('profile',{goal:d.goal});await loadState();render();notify('Hedefin güncellendi.');return;}
+  if(d.plan){await coach('profile',{plan:Number(d.plan)});await loadState();render();notify('Günlük süren güncellendi.');return;}
+  if(d.mascot){if(!mascots[d.mascot])return;const {data,error}=await client.auth.updateUser({data:{yz101_mascot:d.mascot}});if(error)throw error;session={...session,user:data.user};render();return;}
+  const a=d.action;
+  if(a==='start'){await startAnonymous();return;}
+  if(a==='login'){await loginFlow();return;}
+  if(a==='goal-next'){if(!tun.goal)return;page='plan';render();window.scrollTo(0,0);return;}
+  if(a==='plan-next'){await coach('start',{goal:tun.goal,plan:tun.plan});await loadState();page='journey-intro';render();window.scrollTo(0,0);return;}
+  if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
+  if(a==='invite-list'){await emailGate();await coach('list_add',{task:d.task});await loadState();go('home');return;}
+  if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
+  if(a==='place-next'){page='invite';render();window.scrollTo(0,0);return;}
+  if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
+  if(a==='celebrate-next'){programScreen();window.scrollTo(0,0);return;}
+  if(a==='to-home'){go('home');return;}
+  if(a==='save-email'){await emailGate();render();return;}
+  if(a==='edit-name'||a==='cancel-name'){const f=document.querySelector('#profile-form');f.hidden=a==='cancel-name'||!f.hidden;document.querySelector('[data-action="edit-name"]').setAttribute('aria-expanded',String(!f.hidden));if(!f.hidden){const i=document.querySelector('#name-editor');i.focus();i.select();}return;}
+  if(a==='choose-mascot'){const p=document.querySelector('#mascot-options');p.hidden=!p.hidden;b.setAttribute('aria-expanded',String(!p.hidden));return;}
+  if(a==='install'){if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;}return;}
+  if(a==='logout'){await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;page='home';welcome();}
  },b.parentElement);
 });
-root.addEventListener('submit',event=>{if(event.target.closest('[data-lesson-view]'))return;event.preventDefault();const form=event.target,values=Object.fromEntries(new FormData(form)),submitter=event.submitter;
- execute(async()=>{
-  if(form.id==='auth-form'){
-   const mode=page;
-   if(mode==='forgot'){
-    const {error}=await client.auth.resetPasswordForEmail(values.email,{redirectTo:new URL('./',location.href).href});if(error)throw error;
-    root.innerHTML='<section class="card auth"><div class="eyebrow">E-posta kutunu kontrol et</div><h1>Bağlantı istendi.</h1><p>Bu adres kayıtlıysa şifre yenileme bağlantısı gönderildi. Gelen kutunu ve spam klasörünü kontrol et.</p><button class="primary" data-action="login">Girişe dön</button></section>';return;
-   }
-   const credentials={email:values.email.trim(),password:values.password};
-   let response;
-   if(mode==='signup'){
-    response=await client.auth.signInWithPassword(credentials);
-    if(response.error){
-     if(!['invalid_credentials','email_not_confirmed'].includes(response.error.code))throw response.error;
-     response=await client.auth.signUp({...credentials,options:{data:{origin_app:'yz101'},emailRedirectTo:new URL('./',location.href).href}});
-    }
-   }else response=await client.auth.signInWithPassword(credentials);
-   if(response.error)throw response.error;
-   if(!response.data.session){root.innerHTML='<section class="card auth"><h1>Son bir adım</h1><p>E-postandaki bağlantıyı aç, sonra giriş yap. Gelmediyse spam klasörüne bak.</p><button class="primary wide" data-action="login">Giriş yap</button><button class="text actions" data-action="forgot">Şifremi unuttum</button></section>';return;}
-   session=response.data.session;page='home';await reload();
-  }else if(form.id==='reset-form'){
-   if(values.password!==values.repeat)throw Error('Şifreler eşleşmiyor.');
-   const {error}=await client.auth.updateUser({password:values.password});if(error)throw error;
-   await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;recovery=false;history.replaceState(null,'',location.pathname);auth('login','Şifren güncellendi. Yeni şifrenle giriş yapabilirsin.');
-  }else if(form.id==='enroll-form'){
-   await api('enroll',values);await loadState();page='setup';setupStep='install';render();window.scrollTo(0,0);
-  }else if(form.id==='module-form'){
-   const r=await api('complete_module',{id:lesson.id,...values});if(!r.passed){lessonResult(false,'Yanıtların henüz doğru değil. Beklemeden tekrar deneyebilirsin.');return;}
-   page='home';await reload();lessonResult(true,r.already_completed?'Bu dersi daha önce tamamlamıştın.':`Dersi tamamladın ve ${r.points} puan kazandın!`);
-  }else if(form.id==='profile-form'){await api('profile',values);await reload();notify('Profilin kaydedildi.');}
-  else if(form.id==='delete-form'){await api('delete_profile',values);await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;auth('signup','Profilin silindi. Yeniden başlamak için e-posta ve şifreni yaz.');}
- },form);
+root.addEventListener('submit',event=>{
+ if(event.target.closest('[data-lesson-view]'))return;event.preventDefault();const form=event.target,values=Object.fromEntries(new FormData(form));
+ execute(async()=>{if(form.id==='profile-form'){await coach('profile',{username:values.username});await loadState();render();notify('Profilin kaydedildi.');}},form);
 });
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(page==='program')programScreen();});
+window.addEventListener('appinstalled',()=>{deferredInstall=null;if(page==='program')programScreen();});
+
 async function init(){
  if(!client)throw Error('Uygulama bağlantısı yüklenemedi. Sayfayı yenile.');
- client.auth.onAuthStateChange((event,s)=>{session=s;if(event==='PASSWORD_RECOVERY'){recovery=true;resetScreen();}else if(event==='SIGNED_OUT'){lessonView.reset();state=null;if(!working&&!recovery)auth();}});
+ client.auth.onAuthStateChange((event,s)=>{session=s;if(event==='SIGNED_OUT'){lessonView.reset();state=null;if(!working){page='home';welcome();}}});
  const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
- const hashError=new URLSearchParams(location.hash.slice(1)).get('error_description');if(hashError){auth('forgot','Bağlantının süresi dolmuş olabilir. Yeni bağlantı iste.');history.replaceState(null,'',location.pathname);return;}
- if(recovery&&session){resetScreen();history.replaceState(null,'',location.pathname);return;}
- if(recovery&&!session){recovery=false;auth('forgot','Bağlantı geçersiz veya süresi dolmuş. Yeni bağlantı iste.');return;}
- if(session){await reload();}else auth();
+ if(!session){welcome();return;}
+ await loadState();
+ history.replaceState({yz101:true,page:'home'},'',location.pathname);
+ page=state.profile?'home':'goal';render();
 }
 init().catch(e=>{root.innerHTML='<section class="card auth"><h1>Bağlantı kurulamadı.</h1><p>Sayfayı yenileyerek tekrar deneyebilirsin.</p><a class="button" href="./">Yenile</a></section>';failure(e);});
-
-
 try{const clr=()=>{if(document.visibilityState==='visible'&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});};document.addEventListener('visibilitychange',clr);clr();}catch{}
-
-// Close any open dialog when the area outside it is clicked.
-document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open)return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});
+document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.classList.contains('gate'))return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});

@@ -1,7 +1,7 @@
 {
-  "name": "60 Günde Yapay Zeka",
-  "short_name": "60 Günde AI",
-  "description": "60 günde, günde bir dersle yapay zekayı adım adım öğren.",
+  "name": "AI Koçu",
+  "short_name": "AI Koçu",
+  "description": "Kısa derslerle yapay zekayı koçunla adım adım öğren.",
   "lang": "tr",
   "start_url": "./",
   "scope": "./",
