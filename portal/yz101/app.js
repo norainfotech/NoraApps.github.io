@@ -131,8 +131,18 @@ function planScreen(){
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Günlük süre</span><h1>Her gün ne kadar ayırabilirsin?</h1><fieldset class="goal-choices">${Object.entries(plans).map(([k,m])=>`<label class="goal-choice"><input type="radio" name="plan" value="${k}" ${String(tun.plan)===k?'checked':''}><span><strong>Günde ${m} dakika</strong></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="plan-next">Devam</button></section>`;
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.plan=Number(e.target.value);});
 }
+function backTarget(p){
+ const done=!!state?.placement?.done,single=goalsAvail().length===1;
+ if(p==='goal')return done?null:'level';
+ if(p==='plan')return single?(done?null:'level'):'goal';
+ if(p==='journey-intro')return 'plan';
+ if(p==='invite')return 'journey-intro';
+ if(p==='place')return 'level';
+ return null;
+}
+const backBtn=p=>backTarget(p)?'<button type="button" class="back-btn" data-action="back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>':'';
 function levelScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="level-skip">Baştan başlayacağım</button><button class="primary" data-action="placement">Seviyemi koç belirlesin</button></div></section>`;
+ root.innerHTML=`<section class="auth level"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="level-skip">Baştan başlayacağım</button><button class="primary" data-action="placement">Seviyemi AI Koçu belirlesin</button></div></section>`;
 }
 function roadmap(){
  const gi=goals.indexOf(state.profile.goal),total=goalCount();
@@ -168,6 +178,7 @@ async function submitPlacement(){
 function placementQuestion(){
  const it=pl.items[pl.i];
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Soru ${pl.i+1}</span><h1>${esc(it.prompt)}</h1><div class="options">${it.options.map((o,k)=>`<button class="option-btn" data-pa="${k}">${esc(o)}</button>`).join('')}<button class="text" data-pa="-1">Bilmiyorum</button></div></section>`;
+ root.insertAdjacentHTML('afterbegin',backBtn('place'));
 }
 async function placementAnswer(k){
  const it=pl.items[pl.i];pl.answers.push({task:it.task,q:it.q,a:k<0?null:k});pl.i++;
@@ -228,7 +239,7 @@ function render(){
  if(!session||!state){welcome();return;}
  if(!state.profile&&!['goal','plan','level','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
  const tunnel={goal:goalScreen,plan:planScreen,level:levelScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
- if(tunnel[page]){tunnel[page]();return;}
+ if(tunnel[page]){tunnel[page]();root.insertAdjacentHTML('afterbegin',backBtn(page));return;}
  if(['place','place-result','celebrate','lesson'].includes(page))return;
  const v={home:homeView,journey:journeyView,profile:profileView}[page]||homeView;
  root.innerHTML=v()+nav();
@@ -271,6 +282,7 @@ root.addEventListener('click',event=>{
   if(a==='login'){await loginFlow();return;}
   if(a==='goal-next'){if(!tun.goal)return;page='plan';render();window.scrollTo(0,0);return;}
   if(a==='plan-next'){await coach('start',{goal:tun.goal,plan:tun.plan});await loadState();page='journey-intro';render();window.scrollTo(0,0);return;}
+  if(a==='back'){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
   if(a==='level-skip'){afterLevel();return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
   if(a==='invite-list'){await emailGate();await coach('list_add',{task:d.task});await loadState();go('home');return;}

@@ -150,3 +150,6 @@ body[data-page="welcome"] header{display:none}.celebrate-mark{font-size:56px;mar
 .roadmap li.current .dot{background:#FFC83D;border-color:#FFC83D;box-shadow:0 0 0 6px #FFF1C9}
 .roadmap li.goal-stop .dot{background:#fff;border-color:#FFC83D}
 .roadmap strong{display:block;font-size:18px}.roadmap small{color:var(--muted)}
+.back-btn{display:grid;place-items:center;width:42px;height:42px;margin:4px 0 0;padding:0;border:0;border-radius:50%;background:#FFF1C9;color:#6B4400;cursor:pointer}
+.back-btn:hover{background:#FFE7A0}.back-btn:focus-visible{outline:3px solid #FFC83D;outline-offset:2px}
+.auth.level{text-align:left;margin-top:8px}
