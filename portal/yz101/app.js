@@ -65,7 +65,20 @@ window.addEventListener('popstate',e=>{
  const p=e.state?.yz101?e.state.page:'home';page=mainPages.includes(p)?p:'home';
  restoring=true;render();restoring=false;window.scrollTo(0,0);
 });
-const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa','🏠'],['journey','Dersler','📚'],['profile','Profil','🙂']].map(([p,t,i])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${i}</span>${t}</button>`).join('')}</nav>`;
+let pushOn=null;
+function missingCount(){return (state?.account?.anonymous?1:0)+(pushOn===false?1:0);}
+function badgeHtml(){const n=missingCount();return n?`<i class="nav-badge" aria-label="${n} eksik">${n}</i>`:'';}
+function paintBadge(){const s=document.querySelector('.bottom-nav [data-page="profile"] span');if(!s)return;s.querySelector('.nav-badge')?.remove();s.insertAdjacentHTML('beforeend',badgeHtml());}
+async function checkPush(){
+ try{
+  if(!('serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window)){pushOn=null;return;}
+  if(Notification.permission!=='granted'){pushOn=false;}
+  else{const reg=await navigator.serviceWorker.getRegistration();const sub=await reg?.pushManager.getSubscription();
+   if(!sub)pushOn=false;else{const {data,error}=await client.rpc('nora_push',{p_action:'status',p_data:{endpoint:sub.endpoint}});pushOn=error?null:!!(data?.device_registered&&data?.enabled);}}
+ }catch{pushOn=null;}
+ paintBadge();if(page==='profile')render();
+}
+const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa','🏠'],['journey','Dersler','📚'],['profile','Profil','🙂']].map(([p,t,i])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${i}${p==='profile'?badgeHtml():''}</span>${t}</button>`).join('')}</nav>`;
 
 /* ---------- E-posta kodu (anonim -> kalıcı hesap) ---------- */
 function codeDialog({title,intro,send,verify,done}){
@@ -172,7 +185,7 @@ function journeyIntro(){
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler hazır olunca burada olacak.</p><button class="primary wide actions" data-action="to-home">Devam</button></section>`;return;}
- root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="secondary wide" data-action="invite-list" data-task="${n.task_id}">Ders listeme ekle</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button></section>`;
 }
 
 /* ---------- Seviye testi ---------- */
@@ -216,7 +229,7 @@ function celebrateScreen(points){
 }
 function programScreen(){
  page='program';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list"><li><b>Hatırlatmaları aç</b><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody()}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody()}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
@@ -226,12 +239,10 @@ function homeView(){
  else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><button class="primary wide" data-lesson="${n.task_id}" data-mode="lesson">Başla</button>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Hazır olunca burada göreceksin.</p>`;
- const listed=rows().filter(r=>r.listed&&!r.completed&&r.published);
  const done=Math.min(doneCount(),goalCount());
  return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
  <button class="card progress-strip" data-page="journey" aria-label="Dersler sayfasını aç"><span><strong>${esc(u.goal)}</strong><span class="muted">${done}/${goalCount()} ders</span></span><progress max="${goalCount()}" value="${done}"></progress></button>
- <section class="card coach-card">${card}</section>
- ${listed.length?`<section class="card"><strong>Ders listem</strong><div class="list-rows">${listed.map(r=>`<button class="settings-row" data-lesson="${r.task_id}" data-mode="lesson">${esc(titleOf(r.task_id))} <span>›</span></button>`).join('')}</div></section>`:''}`;
+ <section class="card coach-card">${card}</section>`;
 }
 function journeyView(){
  const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
@@ -243,6 +254,7 @@ function profileView(){
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="row"><button class="primary">Kaydet</button><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button></div></form>
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
+ ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
  <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
  <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
@@ -270,8 +282,7 @@ const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.
   await loadState();
   let first=false;try{first=!localStorage.getItem(firstKey());if(first)localStorage.setItem(firstKey(),'1');}catch{}
   if(first){celebrateScreen(info.points);window.scrollTo(0,0);}else go('home');
- },
- onList:async task=>{try{await emailGate();await coach('list_add',{task});await loadState();go('home');notify('Dersi listene ekledim.');}catch(e){failure(e);}}
+ }
 });
 function openLesson(id,mode){
  const lr=rows().find(r=>r.task_id===id);
@@ -300,13 +311,13 @@ root.addEventListener('click',event=>{
   if(a==='back'){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
   if(a==='level-skip'){afterLevel();return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
-  if(a==='invite-list'){await emailGate();await coach('list_add',{task:d.task});await loadState();go('home');return;}
   if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
   if(a==='place-next'){afterLevel();return;}
   if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
   if(a==='celebrate-next'){programScreen();window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
-  if(a==='save-email'){await emailGate();render();return;}
+  if(a==='save-email'){await emailGate();render();paintBadge();return;}
+  if(a==='save-email-program'){await emailGate();programScreen();return;}
   if(a==='edit-name'||a==='cancel-name'){const f=document.querySelector('#profile-form');f.hidden=a==='cancel-name'||!f.hidden;document.querySelector('[data-action="edit-name"]').setAttribute('aria-expanded',String(!f.hidden));if(!f.hidden){const i=document.querySelector('#name-editor');i.focus();i.select();}return;}
   if(a==='choose-mascot'){const p=document.querySelector('#mascot-options');p.hidden=!p.hidden;b.setAttribute('aria-expanded',String(!p.hidden));return;}
   if(a==='install'){if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;}return;}
@@ -329,7 +340,9 @@ async function init(){
  history.replaceState({yz101:true,page:'home'},'',location.pathname);
  page=state.profile?'home':state.placement?.done?'goal':'level';render();
  await raiseGoal().then(()=>render()).catch(()=>{});
+ checkPush();
 }
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&session&&state)checkPush();});
 init().catch(e=>{root.innerHTML='<section class="card auth"><h1>Bağlantı kurulamadı.</h1><p>Sayfayı yenileyerek tekrar deneyebilirsin.</p><a class="button" href="./">Yenile</a></section>';failure(e);});
 try{const clr=()=>{if(document.visibilityState==='visible'&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});};document.addEventListener('visibilitychange',clr);clr();}catch{}
 document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.classList.contains('gate'))return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});

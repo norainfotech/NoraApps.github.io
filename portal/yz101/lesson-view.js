@@ -125,7 +125,7 @@ window.createYZ101LessonView=function(opts){
     if(data.passed){
      modal('Dersi tamamladın',`<p class="lesson-reward">+${points} puan</p>`+rows,'Devam et',async()=>{try{await opts.gate?.('after-test');}catch{return;}opts.onCompleted?.(l.id,{points,via:testout?'test':'lesson'});},{tone:'success'});
     }else if(testout&&!locked()){
-     modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;d.answers=[];d.numeric='';renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{secondary:'Ders listeme ekle',onSecondary:()=>opts.onList?.(l.id),tone:'error'});
+     modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;d.answers=[];d.numeric='';renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{secondary:'Sonra',onSecondary:()=>opts.onExit?.(),tone:'error'});
     }else if(locked()){
      modal('Testi geçemedin',rows+'<p>Bu dersi Ders listene ekledim; 24 saat sonra tekrar deneyebilirsin.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
     }else{

@@ -182,3 +182,5 @@ body:has(.bottom-nav){height:100dvh;overflow:hidden;display:flex;flex-direction:
 body:has(.bottom-nav) header{flex:none}
 body:has(.bottom-nav) main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:0}
 body:has(.bottom-nav) main>:nth-last-child(2){margin-bottom:16px}
+
+.bottom-nav button span{position:relative;display:inline-block}.nav-badge{position:absolute;top:-6px;right:-10px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#d9534f;color:#fff;font:700 11px/17px Inter,system-ui,sans-serif;font-style:normal;text-align:center}
