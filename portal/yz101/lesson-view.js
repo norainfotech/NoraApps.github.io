@@ -96,9 +96,9 @@ window.createYZ101LessonView=function(opts){
     else if(fresh){
      const fb=`<p>${esc(fresh.feedback)}</p>`;
      if(fresh.passed)modal('Uygulama görevini tamamladın.',fb,'Teste geç',async()=>{try{await opts.gate?.('after-ai');}catch{return;}goStage(2);},{tone:'success'});
-     else if(locked())modal('Henüz olmadı',fb+'<p>Kontrol hakkın bitti. Bu dersi Ders listene ekledim; 24 saat sonra tekrar deneyebilirsin.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
+     else if(locked())modal('Henüz olmadı',fb+'<p>Kontrol hakkın bitti. Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
      else modal('Henüz olmadı',fb+`<p class="field-info">${access.bypass?'':'Bir kontrol hakkın daha var. '}Yanıtını geliştirip tekrar kontrol et.</p>`,'Yanıtı düzenle',null,{tone:'error'});
-    }else if(locked()){modal('Henüz olmadı','<p>Bu dersi Ders listene ekledim; 24 saat sonra tekrar deneyebilirsin.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});}
+    }else if(locked()){modal('Henüz olmadı','<p>Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});}
    }
   }
  }
@@ -127,7 +127,7 @@ window.createYZ101LessonView=function(opts){
     }else if(testout&&!locked()){
      modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;d.answers=[];d.numeric='';renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{secondary:'Sonra',onSecondary:()=>opts.onExit?.(),tone:'error'});
     }else if(locked()){
-     modal('Testi geçemedin',rows+'<p>Bu dersi Ders listene ekledim; 24 saat sonra tekrar deneyebilirsin.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
+     modal('Testi geçemedin',rows+'<p>Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
     }else{
      modal('Testi geçemedin',rows,'Tekrar dene',()=>{d.answers=[];d.numeric='';renderLesson();},{tone:'error'});
     }
