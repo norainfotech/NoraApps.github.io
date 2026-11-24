@@ -235,3 +235,12 @@ button.primary,button.secondary,a.button,.btn-row button{text-align:center;justi
 .bottom-nav button[aria-current="page"] .nav-avatar{box-shadow:0 0 0 2px #6B4400}
 .row-ic{flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:10px;vertical-align:-4px}.row-ic.ok{stroke:var(--teal)}
 .list-rows .settings-row .row-t{flex:1;text-align:left}
+
+/* alt menü: %20 büyük, kısa sayfalarda da en altta sabit */
+body:has(.bottom-nav) main{display:flex;flex-direction:column}
+body:has(.bottom-nav) main>*{flex:none}
+body:has(.bottom-nav) main>.bottom-nav{margin-top:auto}
+.bottom-nav button{font-size:14.5px;padding:8px 4px;gap:3px}
+.bottom-nav button span{height:34px}
+.nav-ic{width:29px;height:29px}
+.nav-avatar{width:34px;height:34px}
