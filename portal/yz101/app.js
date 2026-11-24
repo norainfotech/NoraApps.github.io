@@ -194,10 +194,12 @@ async function placementAnswer(k){
  root.innerHTML='<section class="card auth"><p>Sonuç hazırlanıyor…</p></section>';await submitPlacement();
 }
 function placementResult(x){
- const lvl=x.result_level,pts=x.points??(lvl==='Orta'?100:0);
- const copy=lvl==='Orta'?['Başlangıç derslerine ihtiyacın yok.',`+${pts} puan`,'Seni Orta seviyeden başlatıyorum.']:lvl==='İleri'?['Başlangıç ve Orta derslerine ihtiyacın yok.',`+${pts} puan`,'Seni İleri seviyeden başlatıyorum.']:['Temelden başlıyoruz.','','Zor olmayacak.'];
+ const lvl=x.result_level,g=goals[stageLevels.indexOf(lvl)]||goals[0],pts=x.points??(lvl==='Orta'?100:0);
+ const copy=lvl==='Orta'?[`"Anlamak" için gerekli derslere ihtiyacın yok.`,`+${pts} puan`,`Programını "Kullanmak" için gerekli derslerle başlatıyorum.`]
+  :lvl==='İleri'?[`"Anlamak" ve "Kullanmak" için gerekli derslere ihtiyacın yok.`,`+${pts} puan`,`Programını "Üretmek" için gerekli derslerle başlatıyorum.`]
+  :['Temelden başlıyoruz.','','Zor olmayacak.'];
  page='place-result';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>${esc(lvl||'Başlangıç')}</h1><p>${esc(copy[0])}</p>${copy[1]?`<p class="lesson-reward">${esc(copy[1])}</p>`:''}<p>${esc(copy[2])}</p><button class="primary wide actions" data-action="place-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>${esc(g)}</h1><p>${esc(copy[0])}</p>${copy[1]?`<p class="lesson-reward">${esc(copy[1])}</p>`:''}<p>${esc(copy[2])}</p><button class="primary wide actions" data-action="place-next">Devam</button></section>`;
 }
 
 /* ---------- Kutlama ve program ---------- */
