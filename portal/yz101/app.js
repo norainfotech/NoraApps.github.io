@@ -15,7 +15,7 @@ function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  d.querySelector('button').addEventListener('click',close);
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
-function failure(e){let message=e?.message||'İşlem tamamlanamadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postandaki doğrulama bağlantısını aç.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
+function failure(e){if(e?.cancelled)return;let message=e?.message||'İşlem tamamlanamadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postandaki doğrulama bağlantısını aç.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
 async function detachPush(){try{if(!('serviceWorker' in navigator))return;const r=await navigator.serviceWorker.getRegistration();const s=await r?.pushManager.getSubscription();if(s){await client.rpc('nora_push',{p_action:'remove_device',p_data:{endpoint:s.endpoint}});await s.unsubscribe();}}catch{}}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function coach(action,data={}){const {data:r,error}=await client.rpc('yz101_coach',{p_action:action,p_data:data});if(error)throw error;return r;}
@@ -81,31 +81,35 @@ async function checkPush(){
 const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa','🏠'],['journey','Dersler','📚'],['profile','Profil','🙂']].map(([p,t,i])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${i}${p==='profile'?badgeHtml():''}</span>${t}</button>`).join('')}</nav>`;
 
 /* ---------- E-posta kodu (anonim -> kalıcı hesap) ---------- */
-function codeDialog({title,intro,send,verify,done}){
+function codeDialog({title,intro,send,verify,done,dismissible=false}){
  return new Promise((resolve,reject)=>{
-  const d=document.createElement('dialog');d.className='app-result-dialog gate';d.addEventListener('cancel',e=>e.preventDefault());
+  const d=document.createElement('dialog');d.className='app-result-dialog gate';if(dismissible)d.dataset.dismissible='1';
+  const quit=()=>{d.close();d.remove();reject(Object.assign(new Error('cancel'),{cancelled:true}));};
+  d.addEventListener('cancel',e=>{e.preventDefault();if(dismissible)quit();});
   let email='';
   const msg=t=>{const m=d.querySelector('.gate-msg');if(m)m.textContent=t||'';};
   const busy=v=>d.querySelectorAll('button,input').forEach(x=>x.disabled=v);
   const stepEmail=()=>{
-   d.innerHTML=`<h2>${esc(title)}</h2><p>${esc(intro)}</p><form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>`;
+   d.innerHTML=`<h2>${esc(title)}</h2><p>${esc(intro)}</p><form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>${dismissible?'<button type="button" class="text" data-g="quit">Vazgeç</button>':''}`;
    d.querySelector('form').onsubmit=async e=>{e.preventDefault();email=new FormData(e.target).get('email').trim().toLowerCase();busy(true);try{await send(email);stepCode();}catch(err){busy(false);msg(gateError(err));}};
+   d.querySelector('[data-g="quit"]')?.addEventListener('click',quit);
    d.querySelector('input').focus();
   };
   const stepCode=()=>{
-   d.innerHTML=`<h2>Kodu yaz</h2><p>${esc(email)} adresine 6 haneli bir kod gönderdik.</p><form><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="Kod" class="code-input"><p class="gate-msg" role="alert"></p><button class="primary wide">Onayla</button></form><button type="button" class="text" data-g="resend">Kodu tekrar gönder</button><button type="button" class="text" data-g="change">E-postayı değiştir</button>`;
+   d.innerHTML=`<h2>Kodu yaz</h2><p>${esc(email)} adresine 6 haneli bir kod gönderdik.</p><form><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="Kod" class="code-input"><p class="gate-msg" role="alert"></p><button class="primary wide">Onayla</button></form><button type="button" class="text" data-g="resend">Kodu tekrar gönder</button><button type="button" class="text" data-g="change">E-postayı değiştir</button>${dismissible?'<button type="button" class="text" data-g="quit">Vazgeç</button>':''}`;
    d.querySelector('form').onsubmit=async e=>{e.preventDefault();busy(true);try{await verify(email,new FormData(e.target).get('code').trim());await done();d.close();d.remove();resolve();}catch(err){busy(false);msg(/expired|invalid|token/i.test(err?.message||'')?'Kod hatalı ya da süresi dolmuş.':gateError(err));}};
    d.querySelector('[data-g="resend"]').onclick=async()=>{busy(true);try{await send(email);msg('Yeni kod gönderildi.');}catch(err){msg(gateError(err));}busy(false);};
    d.querySelector('[data-g="change"]').onclick=stepEmail;
+   d.querySelector('[data-g="quit"]')?.addEventListener('click',quit);
    d.querySelector('input').focus();
   };
   document.body.append(d);d.showModal();stepEmail();
  });
 }
 function gateError(e){const m=e?.message||'';if(/already|registered|exists/i.test(m))return 'Bu e-posta başka bir hesapta kayıtlı. Başka bir e-posta dene.';if(/rate|seconds|too many/i.test(m))return 'Çok sık denedin. Biraz bekleyip tekrar dene.';if(/invalid.*email|valid email/i.test(m))return 'E-posta adresi geçersiz.';if(/not found|signups not allowed|user/i.test(m))return 'Bu e-postayla kayıtlı hesap bulunamadı.';return 'İşlem tamamlanamadı. Tekrar dene.';}
-function emailGate(){
+function emailGate(soft=false){
  if(!state?.account?.anonymous)return Promise.resolve();
- return codeDialog({title:'İlerlemeni kaydet',intro:'E-postanı yaz. Telefonunu değiştirsen de kaldığın yerden devam edersin.',
+ return codeDialog({dismissible:soft,title:'İlerlemeni kaydet',intro:'E-postanı yaz. Telefonunu değiştirsen de kaldığın yerden devam edersin.',
   send:async email=>{const {error}=await client.auth.updateUser({email});if(error)throw error;},
   verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email_change'});if(error)throw error;if(data?.session)session=data.session;},
   done:async()=>{await loadState();}});
@@ -122,7 +126,7 @@ async function startAnonymous(){
  state.profile?go('home'):render();
 }
 async function loginFlow(){
- await codeDialog({title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana kod gönderelim.',
+ await codeDialog({dismissible:true,title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana kod gönderelim.',
   send:async email=>{const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;},
   verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});if(error)throw error;session=data.session;},
   done:async()=>{await loadState();}});
@@ -316,8 +320,8 @@ root.addEventListener('click',event=>{
   if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
   if(a==='celebrate-next'){programScreen();window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
-  if(a==='save-email'){await emailGate();render();paintBadge();return;}
-  if(a==='save-email-program'){await emailGate();programScreen();return;}
+  if(a==='save-email'){await emailGate(true);render();paintBadge();return;}
+  if(a==='save-email-program'){await emailGate(true);programScreen();return;}
   if(a==='edit-name'||a==='cancel-name'){const f=document.querySelector('#profile-form');f.hidden=a==='cancel-name'||!f.hidden;document.querySelector('[data-action="edit-name"]').setAttribute('aria-expanded',String(!f.hidden));if(!f.hidden){const i=document.querySelector('#name-editor');i.focus();i.select();}return;}
   if(a==='choose-mascot'){const p=document.querySelector('#mascot-options');p.hidden=!p.hidden;b.setAttribute('aria-expanded',String(!p.hidden));return;}
   if(a==='install'){if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;}return;}
@@ -345,4 +349,4 @@ async function init(){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&session&&state)checkPush();});
 init().catch(e=>{root.innerHTML='<section class="card auth"><h1>Bağlantı kurulamadı.</h1><p>Sayfayı yenileyerek tekrar deneyebilirsin.</p><a class="button" href="./">Yenile</a></section>';failure(e);});
 try{const clr=()=>{if(document.visibilityState==='visible'&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});};document.addEventListener('visibilitychange',clr);clr();}catch{}
-document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.classList.contains('gate'))return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});
+document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.classList.contains('gate')&&!d.dataset.dismissible)return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});
