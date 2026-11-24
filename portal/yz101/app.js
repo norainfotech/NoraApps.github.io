@@ -366,7 +366,8 @@ async function init(){
  await raiseGoal().then(()=>render()).catch(()=>{});
  checkPush();
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&session&&state)checkPush();});
+let lastSync=Date.now();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!session||!state)return;checkPush();if(Date.now()-lastSync<60000||working||lessonView.busy()||!['home','journey','profile'].includes(page))return;lastSync=Date.now();loadState().then(()=>{if(['home','journey','profile'].includes(page)&&!working)render();}).catch(()=>{});});
 init().catch(e=>{root.innerHTML='<section class="card auth"><h1>Bağlantı kurulamadı.</h1><p>Sayfayı yenileyerek tekrar deneyebilirsin.</p><a class="button" href="./">Yenile</a></section>';failure(e);});
 try{const clr=()=>{if(document.visibilityState==='visible'&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});};document.addEventListener('visibilitychange',clr);clr();}catch{}
 document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.classList.contains('gate')&&!d.dataset.dismissible)return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});
