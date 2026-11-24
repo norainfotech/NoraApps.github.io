@@ -181,7 +181,7 @@
     },
     bk_score: function () {
       var head = G.last
-        ? '<div class="who">' + esc(G.last.name) + '</div><div class="plus">+' + G.last.pts + '</div>'
+        ? '<div class="plus">+' + G.last.pts + '</div>'
         : '<div class="who">Kimse bilemedi</div><div class="ans" style="color:var(--txt)">' + esc(G.item.ans) + '</div>';
       return top() + head + board(true, G.last && G.last.name) + '<div class="grow"></div>' + btn('Sonraki', 'bkstart', 'pri') + btn('Ana ekran', 'home', 'ghost');
     },
@@ -192,9 +192,9 @@
     },
     s_ref: function () {
       var html = top(G.item.cat) + answerBox(G.item.ans) + '<div class="grow"></div>' +
-        '<div class="counter">' + G.n + ' <small>/ ' + S20_TOTAL + '</small></div><div class="grow"></div>';
-      html += btn('Soru soruldu', 'asked', 'pri', G.n >= S20_TOTAL ? ' disabled' : '');
-      html += btn('Biri bildi', 'swho', 'out');
+        '<div class="counter">' + G.n + ' <small>/ ' + S20_TOTAL + '</small></div><div class="pts-c">' + s20Points() + ' puan</div><div class="grow"></div>';
+      html += btn('Biri bildi', 'swho', 'pri');
+      html += btn('Soru soruldu', 'asked', 'out', G.n >= S20_TOTAL ? ' disabled' : '');
       if (G.n >= S20_TOTAL) html += btn('Kimse bilemedi', 'nobody', 'ghost');
       return html;
     },
@@ -203,13 +203,28 @@
     },
     s_res: function () {
       var head = G.last
-        ? '<div class="who">' + esc(G.last.name) + '</div><div class="plus">+' + G.last.pts + '</div>'
+        ? '<div class="plus">+' + G.last.pts + '</div>'
         : '<div class="who">Kimse bilemedi</div><div class="ans" style="color:var(--txt)">' + esc(G.item.ans) + '</div>';
       return top() + head + board(true, G.last && G.last.name) + '<div class="grow"></div>' + btn('Yeni tur', 'sstart', 'pri') + btn('Ana ekran', 'home', 'ghost');
     },
 
     done: doneScreen
   };
+
+  function askExit() {
+    var m = document.createElement('div');
+    m.className = 'modal';
+    m.innerHTML = '<div class="box" role="dialog" aria-modal="true"><h2>Oyundan çıkılsın mı?</h2>' +
+      btn('Devam et', 'xstay', 'pri') + btn('Çık', 'xleave', 'ghost') + '</div>';
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      e.stopPropagation();
+      document.body.removeChild(m);
+      if (b.getAttribute('data-a') === 'xleave') leave();
+    });
+    document.body.appendChild(m);
+  }
 
   function s20Points() { return Math.max(1, S20_TOTAL - G.n); }
 
@@ -298,7 +313,7 @@
     },
     back: function () {
       var ending = ['by_end', 'bk_score', 's_res', 'done', 'home', 'players'].indexOf(S.screen) !== -1;
-      if (G && !ending && !window.confirm('Oyundan çıkılsın mı?')) return;
+      if (G && !ending) return askExit();
       leave();
     },
     home: leave,
