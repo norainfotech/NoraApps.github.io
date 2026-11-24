@@ -278,7 +278,7 @@ function profileView(){
  ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Ders saatin gelince hatırlatırım.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
  <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
- <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
+ <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap</button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
 }
 
 /* ---------- Çizim ---------- */

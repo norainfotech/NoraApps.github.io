@@ -220,3 +220,5 @@ body main>section.auth:not(.welcome):first-child{margin-top:60px;min-height:calc
 a.button.primary{background:#FFC83D;color:#2B2118}a.button.secondary{background:#FFF1C9;color:#6B4400}a.button.wide{display:block;text-align:center}
 
 .list-rows .settings-row.seq-locked{color:var(--muted);opacity:.65;cursor:pointer}
+
+a.back-btn{text-decoration:none}
