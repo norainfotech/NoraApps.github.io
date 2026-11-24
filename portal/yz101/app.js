@@ -101,13 +101,13 @@ function codeDialog({title,intro,send,verify,done,dismissible=false}){
   const msg=t=>{const m=d.querySelector('.gate-msg');if(m)m.textContent=t||'';};
   const busy=v=>d.querySelectorAll('button,input').forEach(x=>x.disabled=v);
   const stepEmail=()=>{
-   d.innerHTML=`<h2>${esc(title)}</h2><p>${esc(intro)}</p><form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>${dismissible?'<button type="button" class="text" data-g="quit">Vazgeç</button>':''}`;
+   d.innerHTML=`<h2>${esc(title)}</h2><p>${esc(intro)}</p><form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>${dismissible?'<div class="gate-links"><button type="button" class="text" data-g="quit">Vazgeç</button></div>':''}`;
    d.querySelector('form').onsubmit=async e=>{e.preventDefault();email=new FormData(e.target).get('email').trim().toLowerCase();busy(true);try{await send(email);stepCode();}catch(err){busy(false);msg(gateError(err));}};
    d.querySelector('[data-g="quit"]')?.addEventListener('click',quit);
    d.querySelector('input').focus();
   };
   const stepCode=()=>{
-   d.innerHTML=`<h2>Kodu yaz</h2><p>${esc(email)} adresine 6 haneli bir kod gönderdik.</p><form><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="Kod" class="code-input"><p class="gate-msg" role="alert"></p><button class="primary wide">Onayla</button></form><button type="button" class="text" data-g="resend">Kodu tekrar gönder</button><button type="button" class="text" data-g="change">E-postayı değiştir</button>${dismissible?'<button type="button" class="text" data-g="quit">Vazgeç</button>':''}`;
+   d.innerHTML=`<h2>Kodu yaz</h2><p>${esc(email)} adresine 6 haneli bir kod gönderdik.</p><form><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="Kod" class="code-input"><p class="gate-msg" role="alert"></p><button class="primary wide">Onayla</button></form><div class="gate-links"><button type="button" class="text" data-g="resend">Kodu tekrar gönder</button><button type="button" class="text" data-g="change">E-postayı değiştir</button>${dismissible?'<button type="button" class="text" data-g="quit">Vazgeç</button>':''}</div>`;
    d.querySelector('form').onsubmit=async e=>{e.preventDefault();const code=String(new FormData(e.target).get('code')||'').trim();busy(true);try{await verify(email,code);await done();d.close();d.remove();resolve();}catch(err){busy(false);msg(/expired|invalid|token/i.test(err?.message||'')?'Kod hatalı ya da süresi dolmuş.':gateError(err));}};
    d.querySelector('[data-g="resend"]').onclick=async()=>{busy(true);try{await send(email);msg('Yeni kod gönderildi.');}catch(err){msg(gateError(err));}busy(false);};
    d.querySelector('[data-g="change"]').onclick=stepEmail;

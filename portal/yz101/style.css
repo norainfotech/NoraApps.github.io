@@ -225,3 +225,6 @@ a.back-btn{text-decoration:none}
 .big-count{font-size:34px;font-weight:800;letter-spacing:1px;margin:6px 0 14px;color:var(--ink)}
 
 button.primary,button.secondary,a.button,.btn-row button{text-align:center;justify-content:center}
+
+.gate-links{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}.gate-links .text{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#FFF1C9;color:#6B4400;font-size:15px;font-weight:600;text-decoration:none}.gate-links .text:hover{background:#FFE7A0}.gate-links .text:disabled{opacity:.5}
+.coach-card:has(.big-count){text-align:center}
