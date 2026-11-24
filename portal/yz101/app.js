@@ -72,12 +72,16 @@ return `<svg viewBox="0 0 64 64" role="img" aria-label="${m.name}" xmlns="http:/
 /* ---------- Gezinme ---------- */
 const mainPages=['home','journey','profile'];
 let restoring=false;
+const tunnelPages=['level','goal','pace','journey-intro','invite','place'];
+function pushStep(){if(restoring||!tunnelPages.includes(page))return;const s={yz101:true,page},st=history.state;if(st?.yz101&&tunnelPages.includes(st.page))history.replaceState(s,'',location.pathname);else history.pushState(s,'',location.pathname);}
 function go(p,opts={}){
  lessonView.keepDraft();page=p;
  if(!restoring&&opts.push!==false)history.pushState({yz101:true,page:p},'',location.pathname);
  render();window.scrollTo({top:0,left:0,behavior:'instant'});
 }
 window.addEventListener('popstate',e=>{
+ if(session&&tunnelPages.includes(page)){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
+ if(e.state?.yz101&&tunnelPages.includes(e.state.page)){history.back();return;}
  if(!session||!state?.profile||lessonView.busy())return;lessonView.keepDraft();
  const p=e.state?.yz101?e.state.page:'home';page=mainPages.includes(p)?p:'home';
  restoring=true;render();restoring=false;window.scrollTo(0,0);
@@ -291,7 +295,7 @@ function profileView(){
 
 /* ---------- Çizim ---------- */
 function render(){
- clearInterval(countdownTimer);document.body.dataset.page=page;['lesson','place'].includes(page)?wakeOn():wakeOff();
+ clearInterval(countdownTimer);document.body.dataset.page=page;['lesson','place'].includes(page)?wakeOn():wakeOff();pushStep();
  if(!session||!state){welcome();return;}
  if(!state.profile&&!['goal','level','pace','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
  const tunnel={goal:goalScreen,level:levelScreen,pace:paceScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
@@ -343,7 +347,7 @@ root.addEventListener('click',event=>{
   if(a==='pace-free'){page='journey-intro';render();window.scrollTo(0,0);return;}
   if(a==='pace-premium'||a==='premium-info'){premiumInfo();return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
-  if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
+  if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';pushStep();placementQuestion();window.scrollTo(0,0);return;}
   if(a==='place-next'){afterLevel();return;}
   if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
   if(a==='celebrate-next'){if(celebrateFirst)programScreen();else go('home');window.scrollTo(0,0);return;}
