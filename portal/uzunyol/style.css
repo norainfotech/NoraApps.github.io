@@ -14,7 +14,7 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 button:focus-visible, input:focus-visible { outline: 3px solid var(--amb); outline-offset: 2px; }
 .top { display: flex; justify-content: space-between; align-items: center; min-height: 40px;
   font-size: 15px; font-weight: 700; color: var(--mut); }
-.back { background: none; border: 0; font-size: 30px; line-height: 1; padding: 0 12px 0 0; color: var(--mut); min-height: 44px; }
+.back { background: none; border: 0; font-size: 34px; line-height: 1; padding: 0 20px 0 0; color: var(--mut); min-height: 48px; min-width: 64px; text-align: left; }
 .grow { flex: 1; }
 .btn { min-height: 60px; width: 100%; border-radius: 16px; font-size: 20px; font-weight: 800; border: 2px solid var(--line); background: var(--surf); }
 .btn.pri { background: var(--amb); border-color: var(--amb); color: var(--bg); }
@@ -44,13 +44,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--amb); outli
   font-size: 20px; font-weight: 800; background: var(--surf); border: 2px solid var(--line); text-align: left; }
 .rowx { display: flex; gap: 8px; }
 .rowx .name-btn { flex: 1; cursor: default; }
-.x { width: 60px; border-radius: 16px; background: transparent; border: 2px solid var(--line); color: var(--mut); font-size: 24px; font-weight: 800; }
+.x { width: 68px; flex: none; border-radius: 16px; background: transparent; border: 2px solid var(--line); color: var(--mut); font-size: 24px; font-weight: 800; }
 .add { display: flex; gap: 8px; }
-.add input { flex: 1; min-height: 60px; border-radius: 16px; border: 2px dashed var(--line); background: var(--bg); color: var(--txt); font-size: 20px; font-weight: 700; padding: 0 18px; font-family: inherit; }
-.add .btn { width: 120px; }
+.add input { flex: 1; min-width: 0; min-height: 60px; border-radius: 16px; border: 2px dashed var(--line); background: var(--bg); color: var(--txt); font-size: 20px; font-weight: 700; padding: 0 18px; font-family: inherit; }
+.add .btn { width: 68px; flex: none; padding: 0; font-size: 17px; }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .cat { height: 88px; border-radius: 16px; background: var(--surf); border: 2px solid var(--line); font-size: 22px; font-weight: 800; }
-.cat.sel { background: var(--amb); border-color: var(--amb); color: var(--bg); }
+.cat.sel { background: rgba(242,184,75,.16); border-color: var(--amb); color: var(--amb); }
 .ok-l { font-size: 15px; font-weight: 800; color: var(--teal); }
 .big-q { font-size: 30px; line-height: 1.2; font-weight: 800; }
 .ans { font-size: 40px; line-height: 1.1; font-weight: 800; color: var(--amb); }
@@ -64,3 +64,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--amb); outli
 .srow { display: flex; justify-content: space-between; font-size: 20px; font-weight: 800; }
 .srow.hi { color: var(--amb); }
 .note { font-size: 14px; font-weight: 600; color: var(--mut); }
+
+.opt + .btn { margin-top: 12px; }
+.pts-c { text-align: center; font-size: 18px; font-weight: 800; color: var(--amb); margin-top: -8px; }
+.modal { position: fixed; inset: 0; background: rgba(8,18,22,.72); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+.modal .box { width: 100%; max-width: 420px; background: var(--surf); border: 2px solid var(--line); border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.modal h2 { margin: 0; font-size: 24px; font-weight: 800; }
