@@ -56,7 +56,7 @@ function installCard(dismissible){
  if(isStandalone())return '';
  try{if(dismissible&&localStorage.getItem('yz101_install_off'))return '';}catch{}
  const close=dismissible?'<button type="button" class="text install-close" data-action="install-off" aria-label="Kapat">Şimdi değil</button>':'';
- return '<section class="card install-card" id="install-card"><strong>Ana ekrana ekle</strong><p class="muted">Ders saatin gelince hatırlatma gelir.</p>'+installBody()+close+'</section>';
+ return '<section class="card install-card" id="install-card"><strong>Ana ekrana ekle</strong><p class="muted">Hatırlatmaların için uygulamayı ana ekrana ekle.</p>'+installBody()+close+'</section>';
 }
 const mascots={fox:{name:'Tilki',color:'#f3b579'},owl:{name:'Baykuş',color:'#b3a1db'},cat:{name:'Kedi',color:'#e4b5cf'},panda:{name:'Panda',color:'#b4d7c5'}};
 function avatarId(){const id=session?.user?.user_metadata?.yz101_mascot;return mascots[id]?id:'fox';}
