@@ -152,7 +152,7 @@ function goalScreen(){
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
 }
 function paceScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="muted">Her gün ${PER_DAY} ders ücretsiz. Daha hızlı ilerlemek istersen Premium ile sınırsız ders yapabilirsin.</p><button class="primary wide actions" data-action="pace-free">Günde ${PER_DAY} ders · Ücretsiz</button><button class="secondary wide" data-action="pace-premium">Sınırsız ders · Premium <span class="pill">Yakında</span></button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="muted">Her gün ${PER_DAY} ders ücretsiz. Daha hızlı ilerlemek istersen Premium ile sınırsız ders yapabilirsin.</p><div class="btn-row pace-row"><button class="secondary" data-action="pace-premium"><b>Sınırsız ders</b><small>Premium · Yakında</small></button><button class="primary" data-action="pace-free"><b>Günde ${PER_DAY} ders</b><small>Ücretsiz</small></button></div></section>`;
 }
 function backTarget(p){
  const done=!!state?.placement?.done,single=goalsAvail().length===1;
@@ -193,7 +193,7 @@ function journeyIntro(){
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler hazır olunca burada olacak.</p><button class="primary wide actions" data-action="to-home">Devam</button></section>`;return;}
- root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><button class="primary wide actions" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button><button class="secondary wide" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button></div></section>`;
 }
 
 /* ---------- Seviye testi ---------- */
@@ -233,7 +233,7 @@ function placementResult(x){
 /* ---------- Kutlama ve program ---------- */
 function celebrateScreen(points){
  page='celebrate';
- root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>İlk dersin tamam!</h1><p class="lesson-reward">+${points} puan</p><p class="muted">İlk adım en zoru. Devam ediyoruz.</p>${navigator.share?'<button class="secondary wide" data-action="share">Arkadaşlarınla paylaş</button>':''}<button class="primary wide actions" data-action="celebrate-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>İlk dersin tamam!</h1><p class="lesson-reward">+${points} puan</p><p class="muted">İlk adım en zoru. Devam ediyoruz.</p><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam</button></div></section>`;
 }
 function programScreen(){
  page='program';
@@ -259,7 +259,7 @@ function journeyView(){
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
  return `<h1>Profilim</h1><section class="profile-head"><button type="button" class="avatar large" data-action="choose-mascot" aria-label="Maskot seç" aria-expanded="false" aria-controls="mascot-options">${mascot(avatarId())}</button><div class="profile-identity"><button class="editable-name" data-action="edit-name" aria-label="Kullanıcı adını düzenle" aria-expanded="false" aria-controls="name-editor">${esc(u.username)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button><div class="identity-meta"><span class="points">${esc(state.points)} puan</span></div></div></section>
- <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="row"><button class="primary">Kaydet</button><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button></div></form>
+ <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
  ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}

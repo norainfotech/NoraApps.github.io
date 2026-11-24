@@ -184,3 +184,10 @@ body:has(.bottom-nav) main{flex:1;min-height:0;overflow-y:auto;overscroll-behavi
 body:has(.bottom-nav) main>:nth-last-child(2){margin-bottom:16px}
 
 .bottom-nav button span{position:relative;display:inline-block}.nav-badge{position:absolute;top:-6px;right:-10px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#d9534f;color:#fff;font:700 11px/17px Inter,system-ui,sans-serif;font-style:normal;text-align:center}
+
+.btn-row button b{display:block}.btn-row button small{display:block;font-size:12px;font-weight:500;line-height:1.3;opacity:.8}.pace-row button{padding-top:10px;padding-bottom:10px}
+.app-result-dialog[open]:has(#result-secondary:not([hidden])){display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.app-result-dialog[open]:has(#result-secondary:not([hidden])) h2,.app-result-dialog[open]:has(#result-secondary:not([hidden])) #result-body{grid-column:1/-1}
+.app-result-dialog[open]:has(#result-secondary:not([hidden])) #result-action{grid-column:2;grid-row:3;margin:0}
+.app-result-dialog[open]:has(#result-secondary:not([hidden])) #result-secondary{grid-column:1;grid-row:3;margin:0}
+body:is([data-page="pace"],[data-page="invite"],[data-page="celebrate"]) main>section.auth>.btn-row{margin-top:auto}
