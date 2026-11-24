@@ -191,3 +191,4 @@ body:has(.bottom-nav) main>:nth-last-child(2){margin-bottom:16px}
 .app-result-dialog[open]:has(#result-secondary:not([hidden])) #result-action{grid-column:2;grid-row:3;margin:0}
 .app-result-dialog[open]:has(#result-secondary:not([hidden])) #result-secondary{grid-column:1;grid-row:3;margin:0}
 body:is([data-page="pace"],[data-page="invite"],[data-page="celebrate"]) main>section.auth>.btn-row{margin-top:auto}
+.pace-row button{padding:12px 6px}.pace-row button b{font-size:15px;white-space:nowrap}.pace-row button small{white-space:nowrap}
