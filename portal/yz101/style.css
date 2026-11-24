@@ -204,3 +204,12 @@ body:is([data-page="pace"],[data-page="invite"],[data-page="celebrate"]) main>se
 .roadmap li.goal-stop strong{font-size:22px}.roadmap li.goal-stop small{font-size:14px}
 .roadmap{margin-bottom:26px}
 body[data-page="welcome"] main>section.welcome>.btn-row{margin-top:20px}
+
+/* Ortak ekran düzeni: başlık üstte, eylemler altta; tüm ana butonlar aynı boyda */
+.btn-row button,main>section.auth>button.wide{min-height:60px;padding:10px 8px;line-height:1.25;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+main>section.auth>button.wide{padding-left:20px;padding-right:20px}
+.btn-row button b{font-size:15px;line-height:1.25}.btn-row button small{margin-top:1px}
+body:is([data-page="pace"],[data-page="level"]) main>section.auth{min-height:calc(100dvh - 170px);display:flex;flex-direction:column}
+body[data-page="level"] main>section.auth.level{justify-content:flex-start;min-height:calc(100dvh - 170px);margin-top:10px}
+body:is([data-page="level"],[data-page="pace"]) main>section.auth>.btn-row{margin-top:auto}
+body[data-page="level"] .btn-row{margin-top:auto}

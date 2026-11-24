@@ -165,7 +165,7 @@ function backTarget(p){
 }
 const backBtn=p=>backTarget(p)?'<button type="button" class="back-btn" data-action="back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>':'';
 function levelScreen(){
- root.innerHTML=`<section class="auth level"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="placement">Seviyemi AI Koçu belirlesin</button><button class="primary" data-action="level-skip">Baştan başlayacağım</button></div></section>`;
+ root.innerHTML=`<section class="card auth level"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="placement">Seviyemi AI Koçu belirlesin</button><button class="primary" data-action="level-skip">Baştan başlayacağım</button></div></section>`;
 }
 function roadmap(){
  const gi=goals.indexOf(state.profile.goal),total=goalCount();
