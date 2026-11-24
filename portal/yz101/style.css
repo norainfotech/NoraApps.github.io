@@ -203,3 +203,4 @@ body:is([data-page="pace"],[data-page="invite"],[data-page="celebrate"]) main>se
 .roadmap li.goal-stop .dot{font-size:24px;border-width:4px;box-shadow:0 0 0 6px #FFF1C9}
 .roadmap li.goal-stop strong{font-size:22px}.roadmap li.goal-stop small{font-size:14px}
 .roadmap{margin-bottom:26px}
+body[data-page="welcome"] main>section.welcome>.btn-row{margin-top:20px}
