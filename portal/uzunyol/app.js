@@ -25,6 +25,18 @@
     }
   };
 
+  var SB_URL = 'https://gjztdlihsfmozxcgdwke.supabase.co/rest/v1/rpc/ulo_count';
+  var SB_KEY = 'sb_publishable_tDQAKMpHaorQAplXqg5Nqg_zwOImZeT';
+  function ping(ev) {
+    try {
+      fetch(SB_URL, {
+        method: 'POST', keepalive: true,
+        headers: { 'Content-Type': 'application/json', apikey: SB_KEY },
+        body: JSON.stringify({ p_event: ev })
+      }).catch(function () {});
+    } catch (e) { /* sessiz */ }
+  }
+
   var players = store.get('ulo_players', []);
   var seen = store.get('ulo_seen', { by: [], bk: [], s20: [] });
   var S = { screen: 'home', open: null, after: null };
@@ -241,6 +253,7 @@
   // ---------- oyun akışı ----------
   function startGame(key) {
     G = { key: key, scores: freshScores(), cat: 'Karışık', show: true };
+    ping('start_' + key);
     lock();
     if (key === 'by') startRound();
     else go(key === 'bk' ? 'bk_cat' : 's_cat');
@@ -255,7 +268,7 @@
   }
   function byNext() {
     G.i++;
-    if (G.i >= G.round.length) return go('by_end');
+    if (G.i >= G.round.length) { ping('end_by'); return go('by_end'); }
     var q = G.round[G.i];
     G.cur = q;
     G.opts = shuffle([q.ok].concat(q.wrong));
@@ -342,6 +355,7 @@
       var p = players[+v], pts = 6 - G.clue;
       G.scores[p] = (G.scores[p] || 0) + pts;
       G.last = { name: p, pts: pts };
+      ping('end_bk');
       go('bk_score');
     },
 
@@ -352,11 +366,13 @@
       var p = players[+v], pts = s20Points();
       G.scores[p] = (G.scores[p] || 0) + pts;
       G.last = { name: p, pts: pts };
+      ping('end_s20');
       go('s_res');
     },
 
     nobody: function () {
       G.last = null;
+      ping('end_' + G.key);
       go(G.key === 'bk' ? 'bk_score' : 's_res');
     }
   };
@@ -377,5 +393,7 @@
     });
   }
 
+  ping('open');
+  if (!store.get('ulo_seen_app', false)) { store.set('ulo_seen_app', true); ping('first_open'); }
   render();
 })();
