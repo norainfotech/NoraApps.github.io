@@ -152,7 +152,7 @@ function goalScreen(){
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
 }
 function paceScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="muted">Her gün ${PER_DAY} ders ücretsiz. Daha hızlı ilerlemek istersen Premium ile sınırsız ders yapabilirsin.</p><div class="btn-row pace-row"><button class="secondary" data-action="pace-premium"><b>Sınırsız ders</b><small>Premium · Yakında</small></button><button class="primary" data-action="pace-free"><b>Günde ${PER_DAY} ders</b><small>Ücretsiz</small></button></div></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="muted">Her gün ${PER_DAY} ders ücretsiz. Daha hızlı ilerlemek istersen Premium ile sınırsız ders yapabilirsin.</p><div class="btn-row pace-row"><button class="secondary" data-action="pace-free"><b>Günde ${PER_DAY} ders</b><small>Ücretsiz</small></button><button class="primary" data-action="pace-premium"><b>Sınırsız ders</b><small>Premium · Yakında</small></button></div></section>`;
 }
 function backTarget(p){
  const done=!!state?.placement?.done,single=goalsAvail().length===1;
