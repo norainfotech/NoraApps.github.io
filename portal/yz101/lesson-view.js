@@ -1,4 +1,4 @@
-// AI Koçu ders ekranı: Öğren → Uygula → Test, ya da "Teste hazırım" (doğrudan test).
+// AI Koçu ders ekranı: Öğren → Uygula → Test, ya da "Testle geç" (doğrudan test).
 // Kontrol hakkı ve kilit ders başınadır; tüm doğrulama sunucuda yapılır.
 window.createYZ101LessonView=function(opts){
  const $=s=>document.querySelector(s),client=opts.client;
@@ -160,7 +160,7 @@ window.createYZ101LessonView=function(opts){
   busy:()=>busy,
   keepDraft,
   reset(){mentor.close();drafts={};user=null;taskId=null;info={};access={};$('#result-dialog')?.remove();},
-  // mode: 'lesson' (Öğren ile başla) | 'testout' (Teste hazırım)
+  // mode: 'lesson' (Öğren ile başla) | 'testout' (Testle geç)
   open(id,o={}){
    if(busy)return false;const nextUser=opts.getUser();if(user?.id!==nextUser?.id)drafts={};user=nextUser;
    const meta=LESSONS.find(l=>l.id===id);if(!meta)return false;

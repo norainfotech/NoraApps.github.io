@@ -228,3 +228,10 @@ button.primary,button.secondary,a.button,.btn-row button{text-align:center;justi
 
 .gate-links{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}.gate-links .text{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#FFF1C9;color:#6B4400;font-size:15px;font-weight:600;text-decoration:none}.gate-links .text:hover{background:#FFE7A0}.gate-links .text:disabled{opacity:.5}
 .coach-card:has(.big-count){text-align:center}
+
+.bottom-nav button span{display:grid;place-items:center;height:28px}
+.nav-ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-avatar{display:block;width:28px;height:28px;border-radius:50%;overflow:hidden;background:#FFF1C9;box-shadow:0 0 0 2px transparent}.nav-avatar svg{display:block;width:100%;height:100%}
+.bottom-nav button[aria-current="page"] .nav-avatar{box-shadow:0 0 0 2px #6B4400}
+.row-ic{flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:10px;vertical-align:-4px}.row-ic.ok{stroke:var(--teal)}
+.list-rows .settings-row .row-t{flex:1;text-align:left}
