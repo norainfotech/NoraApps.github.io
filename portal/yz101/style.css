@@ -192,3 +192,13 @@ body:has(.bottom-nav) main>:nth-last-child(2){margin-bottom:16px}
 .app-result-dialog[open]:has(#result-secondary:not([hidden])) #result-secondary{grid-column:1;grid-row:3;margin:0}
 body:is([data-page="pace"],[data-page="invite"],[data-page="celebrate"]) main>section.auth>.btn-row{margin-top:auto}
 .pace-row button{padding:12px 6px}.pace-row button b{font-size:15px;white-space:nowrap}.pace-row button small{white-space:nowrap}
+
+.roadmap li{--d:38px}.roadmap li.start{--d:30px}.roadmap li.mid{--d:28px}.roadmap li.goal-stop{--d:48px}
+.roadmap .dot{flex:0 0 var(--d);width:var(--d);height:var(--d);margin:0 calc((48px - var(--d))/2)}
+.roadmap li::before{left:22.5px;top:calc(var(--d)/2)}
+.roadmap li.start .dot{font-size:14px}
+.roadmap li.mid .dot{font-size:13px;border-width:2px}
+.roadmap li.mid.current .dot{box-shadow:0 0 0 4px #FFF1C9}
+.roadmap li.mid strong{font-size:15px;font-weight:600}.roadmap li.mid small{font-size:12px}
+.roadmap li.goal-stop .dot{font-size:24px;border-width:4px;box-shadow:0 0 0 6px #FFF1C9}
+.roadmap li.goal-stop strong{font-size:22px}.roadmap li.goal-stop small{font-size:14px}

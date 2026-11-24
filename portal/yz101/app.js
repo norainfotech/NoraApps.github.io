@@ -173,10 +173,10 @@ function roadmap(){
  const levels=stageLevels.slice(0,gi+1);
  const stops=levels.map((level,k)=>{
   const items=COURSE.filter(c=>c.level===level&&c.n<=total),left=items.filter(c=>!row(c.id)?.completed).length,last=k===levels.length-1,name=goals[k];
-  if(!left)return `<li class="done${last?' goal-stop':''}"><span class="dot">${last?'🏁':'✓'}</span><div><strong>${name}</strong><small>${last?'Hedefin · tamamlandı':'Tamamlandı'}</small></div></li>`;
+  if(!left)return `<li class="done${last?' goal-stop':' mid'}"><span class="dot">${last?'🏁':'✓'}</span><div><strong>${name}</strong><small>${last?'Hedefin · tamamlandı':'Tamamlandı'}</small></div></li>`;
   cum+=left/PER_DAY;const start=prev+1,end=Math.max(start,Math.ceil(cum));prev=end;
   const days=start===end?`Gün ${start}`:`Gün ${start}–${end}`;
-  return `<li class="${last?'goal-stop':start===1?'current':'upcoming'}"><span class="dot">${last?'🏁':''}</span><div><strong>${name}</strong><small>${days}${last?' · hedefin':''}</small></div></li>`;
+  return `<li class="${last?'goal-stop':start===1?'current mid':'upcoming mid'}"><span class="dot">${last?'🏁':''}</span><div><strong>${name}</strong><small>${days}${last?' · hedefin':''}</small></div></li>`;
  }).join('');
  return `<ol class="roadmap"><li class="start"><span class="dot">📍</span><div><strong>Bugün</strong></div></li>${stops}</ol>`;
 }
@@ -187,7 +187,7 @@ function animateCount(){
 }
 function journeyIntro(){
  const n=daysLeft();
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${PER_DAY} dersle en az ${n} günde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${PER_DAY} dersle yaklaşık ${n} günde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
  animateCount();
 }
 function inviteScreen(){
