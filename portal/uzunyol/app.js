@@ -92,15 +92,23 @@
   });
 
   // ---------- parçalar ----------
-  function top(right) {
-    return '<div class="top"><button class="back" data-a="back" aria-label="Geri">‹</button><span>' + (right ? esc(right) : '') + '</span></div>';
+  // ---------- ortak iskelet: her ekran bunu kullanır ----------
+  // o: { title, sub, right, back(false=logo), body, foot:[html,...] }  foot sırası: ikincil..., ana (en altta)
+  function scr(o) {
+    var left = o.back === false
+      ? '<img class="logo" src="icon-192.png" alt="" width="40" height="40">'
+      : '<button class="back" data-a="back" aria-label="Geri">‹</button>';
+    return '<div class="hd">' + left + '<span class="hd-r">' + (o.right ? esc(o.right) : '') + '</span></div>' +
+      '<div class="ttl"><h1>' + esc(o.title) + '</h1><p class="sub">' + (o.sub ? esc(o.sub) : '') + '</p></div>' +
+      '<div class="ct" id="ct">' + (o.body || '') + '</div>' +
+      '<div class="ft">' + (o.foot || []).join('') + '</div>';
   }
   function btn(label, action, kind, extra) {
     return '<button class="btn ' + (kind || '') + '" data-a="' + action + '"' + (extra || '') + '>' + label + '</button>';
   }
   function nameList(action) {
     return players.map(function (p, i) {
-      return '<button class="name-btn" data-a="' + action + '" data-v="' + i + '">' + esc(p) + '</button>';
+      return '<button class="row-b tap" data-a="' + action + '" data-v="' + i + '">' + esc(p) + '</button>';
     }).join('');
   }
   function board(onlyScored, hiName) {
@@ -116,108 +124,115 @@
   }
   function answerBox(text) {
     var label = G.show ? 'Gizle' : 'Göster';
-    return '<div class="card cur"><div class="row"><span class="lbl">Cevap</span>' +
+    return '<div class="card cur ans-card"><div class="row"><span class="lbl">Cevap</span>' +
       '<button class="hide-btn" data-a="toggle">' + label + '</button></div>' +
       (G.show ? '<div class="ans">' + esc(text) + '</div>' : '<div class="ans" aria-hidden="true">•••••</div>') + '</div>';
   }
-  function doneScreen() {
-    return top() + '<h1>Sorular bitti</h1><p class="note">Bu oyundaki bütün içerik oynandı.</p><div class="grow"></div>' +
-      btn('Baştan başla', 'reset', 'pri') + btn('Ana ekran', 'home', 'ghost');
+  function heroPts() {
+    return G.last
+      ? '<div class="hero"><div class="num acc">+' + G.last.pts + '</div><div class="cap">puan</div></div>'
+      : '<div class="hero"><div class="cap">Kimse bilemedi</div><div class="ans">' + esc(G.item.ans) + '</div></div>';
   }
+  function doneScreen() {
+    return scr({ title: 'Sorular bitti', sub: 'Bu oyundaki bütün içerik oynandı',
+      foot: [btn('Ana ekran', 'home', 'ghost'), btn('Baştan başla', 'reset', 'pri')] });
+  }
+
+
+  // Ana ekran sloganı: "oyun bitmez" renkli yol şeridinin üstünde; açılışta bir kez çizilir
+  var SLOGAN = '<div class="slogan" aria-label="Yol biter, oyun bitmez">' +
+    '<svg viewBox="0 0 350 150" role="img" aria-hidden="true">' +
+    '<g transform="rotate(-3 175 75)">' +
+      '<text class="sl-t1" x="10" y="38" font-size="30">Yol biter,</text>' +
+      '<g class="sl-sp"><path d="M262 16 l9 -10 M276 24 l12 -6 M254 28 l3 -13"/></g>' +
+      '<rect class="sl-pill" x="6" y="52" width="338" height="58" rx="29"/>' +
+      '<text class="sl-t2" x="175" y="93" font-size="34" text-anchor="middle">oyun bitmez</text>' +
+      '<path class="sl-road" d="M20 134 Q175 122 330 130"/>' +
+      '<path class="sl-dash" d="M20 134 Q175 122 330 130"/>' +
+    '</g></svg></div>';
 
   // ---------- ekranlar ----------
   var screens = {
     home: function () {
-      var html = '<h1 style="font-size:36px">Uzun Yol Oyunları</h1>';
+      var body = '';
       ['by', 'bk', 's20'].forEach(function (k) {
         var open = S.open === k;
-        html += '<div><div class="game"><button class="name" data-a="play" data-v="' + k + '">' + NAMES[k] + '</button>' +
+        body += '<div class="pair"><button class="row-b tap" data-a="play" data-v="' + k + '">' + NAMES[k] + '</button>' +
           '<button class="info" data-a="info" data-v="' + k + '" aria-label="' + NAMES[k] + ' hakkında bilgi" aria-expanded="' + open + '">' + (open ? '×' : 'i') + '</button></div>' +
-          (open ? '<div class="desc">' + DESC[k] + '</div>' : '') + '</div>';
+          (open ? '<div class="card"><span class="clue cur">' + DESC[k] + '</span></div>' : '');
       });
-      html += '<div class="grow"></div>' + btn('Oyuncular', 'players', 'ghost');
-      return html;
+      return scr({ back: false, title: 'Uzun Yol Oyunları', sub: 'Bir oyun seç', body: body + SLOGAN, foot: [btn('Oyuncular', 'players', 'ghost')] });
     },
 
     players: function () {
-      var html = top() + '<h1>Kimler oynuyor?</h1>';
-      html += players.map(function (p, i) {
-        return '<div class="rowx"><div class="name-btn">' + esc(p) + '</div><button class="x" data-a="delp" data-v="' + i + '" aria-label="' + esc(p) + ' sil">×</button></div>';
+      var body = players.map(function (p, i) {
+        return '<div class="pair"><div class="row-b">' + esc(p) + '</div><button class="x" data-a="delp" data-v="' + i + '" aria-label="' + esc(p) + ' sil">×</button></div>';
       }).join('');
       if (players.length < MAX_PLAYERS) {
-        html += '<div class="add"><input id="pname" type="text" maxlength="14" placeholder="İsim" autocomplete="off" aria-label="Oyuncu adı">' + btn('Ekle', 'addp', 'ghost') + '</div>';
+        body += '<div class="pair add"><input id="pname" type="text" maxlength="14" placeholder="İsim" autocomplete="off" aria-label="Oyuncu adı">' + btn('Ekle', 'addp', 'ghost') + '</div>';
       }
-      html += '<div class="grow"></div>';
       var need = S.after && players.length < 2;
-      html += btn(need ? 'En az 2 oyuncu' : 'Tamam', 'pdone', 'pri', need ? ' disabled' : '');
-      return html;
+      return scr({ title: 'Kimler oynuyor?', sub: 'En fazla ' + MAX_PLAYERS + ' oyuncu', body: body,
+        foot: [btn(need ? 'En az 2 oyuncu' : 'Tamam', 'pdone', 'pri', need ? ' disabled' : '')] });
     },
 
     // --- Bilgi Yarışması ---
     by_q: function () {
       var q = G.cur, wrong = G.state === 'wrong', right = G.state === 'right', done = wrong || right;
-      var html = top((G.i + 1) + ' / ' + G.round.length) + '<span class="chip">' + esc(q.cat) + '</span><div class="big-q">' + esc(q.q) + '</div><div class="grow"></div>';
-      html += G.opts.map(function (o, i) {
+      var body = '<div class="q">' + esc(q.q) + '</div>';
+      body += G.opts.map(function (o, i) {
         var cls = 'opt', tag = '';
         if (done) {
           cls += (i === G.chosen ? (right ? ' ok' : ' bad') : ' dim');
-          if (i === G.chosen) tag = right ? '<span class="g" style="color:var(--teal)">Doğru</span>' : '<span class="g">Yanlış</span>';
+          if (i === G.chosen) tag = '<span class="g">' + (right ? 'Doğru' : 'Yanlış') + '</span>';
         }
         return '<button class="' + cls + '" data-a="opt" data-v="' + i + '"' + (done ? ' disabled' : '') + '><span class="l">' + LETTERS[i] + '</span><span class="t">' + esc(o) + '</span>' + tag + '</button>';
       }).join('');
-      if (done) html += btn(G.i + 1 >= G.round.length ? 'Bitir' : 'Sonraki soru', 'bynext', 'pri');
-      return html;
+      return scr({ title: NAMES.by, sub: q.cat, right: (G.i + 1) + ' / ' + G.round.length, body: body,
+        foot: [btn(G.i + 1 >= G.round.length ? 'Bitir' : 'Sonraki soru', 'bynext', 'pri', done ? '' : ' disabled')] });
     },
     by_end: function () {
-      return top() + '<h1>Tur bitti</h1><div class="grow"></div><div class="counter" style="color:var(--amb)">' + G.score + ' <small>/ ' + G.round.length + '</small></div><p class="note" style="text-align:center">doğru cevap</p><div class="grow"></div>' +
-        btn('Yeni tur', 'byround', 'pri') + btn('Ana ekran', 'home', 'ghost');
+      var body = '<div class="hero"><div class="num acc">' + G.score + ' <small>/ ' + G.round.length + '</small></div><div class="cap">doğru cevap</div></div>';
+      return scr({ title: 'Tur bitti', sub: NAMES.by, body: body, foot: [btn('Ana ekran', 'home', 'ghost'), btn('Yeni tur', 'byround', 'pri')] });
     },
 
     // --- Ben Kimim ---
     bk_cat: function () {
-      return top() + '<h1>Kategori</h1>' + catGrid(BK_CATS, G.cat) + '<div class="grow"></div>' + btn('Başla', 'bkstart', 'pri');
+      return scr({ title: 'Kategori', sub: NAMES.bk, body: catGrid(BK_CATS, G.cat), foot: [btn('Başla', 'bkstart', 'pri')] });
     },
     bk_clue: function () {
-      var it = G.item, html = top(it.cat) + answerBox(it.ans);
-      html += '<div class="row"><span class="lbl" style="font-size:16px">İpucu ' + G.clue + ' / 5</span><span class="pts">' + (6 - G.clue) + ' puan</span></div>';
+      var it = G.item, body = answerBox(it.ans);
       for (var i = 0; i < G.clue; i++) {
         var cur = i === G.clue - 1;
-        html += '<div class="card' + (cur ? ' cur' : '') + '"><span class="lbl' + (cur ? ' cur' : '') + '">İpucu ' + (i + 1) + '</span><span class="clue' + (cur ? ' cur' : '') + '">' + esc(it.clues[i]) + '</span></div>';
+        body += '<div class="card' + (cur ? ' cur' : '') + '"><span class="lbl' + (cur ? ' cur' : '') + '">İpucu ' + (i + 1) + '</span><span class="clue' + (cur ? ' cur' : '') + '">' + esc(it.clues[i]) + '</span></div>';
       }
-      html += '<div class="grow"></div>' + btn('Biri bildi', 'bkwho', 'pri');
-      html += G.clue < 5 ? btn('Sonraki ipucu', 'nextclue', 'out') : btn('Kimse bilemedi', 'nobody', 'out');
-      return html;
+      return scr({ title: NAMES.bk, sub: it.cat + ' · İpucu ' + G.clue + ' / 5', right: (6 - G.clue) + ' puan', body: body,
+        foot: [G.clue < 5 ? btn('Sonraki ipucu', 'nextclue', 'out') : btn('Kimse bilemedi', 'nobody', 'out'), btn('Biri bildi', 'bkwho', 'pri')] });
     },
     bk_who: function () {
-      return top((6 - G.clue) + ' puan') + '<h1>Kim bildi?</h1>' + nameList('bkwin') + '<div class="grow"></div>' + btn('Kimse bilemedi', 'nobody', 'ghost');
+      return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + (6 - G.clue) + ' puan', body: nameList('bkwin'), foot: [btn('Kimse bilemedi', 'nobody', 'ghost')] });
     },
     bk_score: function () {
-      var head = G.last
-        ? '<div class="plus">+' + G.last.pts + '</div>'
-        : '<div class="who">Kimse bilemedi</div><div class="ans" style="color:var(--txt)">' + esc(G.item.ans) + '</div>';
-      return top() + head + board(true, G.last && G.last.name) + '<div class="grow"></div>' + btn('Sonraki', 'bkstart', 'pri') + btn('Ana ekran', 'home', 'ghost');
+      return scr({ title: 'Puan durumu', sub: NAMES.bk, body: heroPts() + board(true, G.last && G.last.name),
+        foot: [btn('Ana ekran', 'home', 'ghost'), btn('Sonraki', 'bkstart', 'pri')] });
     },
 
     // --- 20 Soru ---
     s_cat: function () {
-      return top() + '<h1>Kategori</h1>' + catGrid(S20_CATS, G.cat) + '<div class="grow"></div>' + btn('Başla', 'sstart', 'pri');
+      return scr({ title: 'Kategori', sub: NAMES.s20, body: catGrid(S20_CATS, G.cat), foot: [btn('Başla', 'sstart', 'pri')] });
     },
     s_ref: function () {
-      var html = top(G.item.cat) + answerBox(G.item.ans) + '<div class="grow"></div>' +
-        '<div class="counter">' + G.n + ' <small>/ ' + S20_TOTAL + '</small></div><div class="pts-c">' + s20Points() + ' puan</div><div class="grow"></div>';
-      html += btn('Biri bildi', 'swho', 'pri');
-      html += btn('Soru soruldu', 'asked', 'out', G.n >= S20_TOTAL ? ' disabled' : '');
-      if (G.n >= S20_TOTAL) html += btn('Kimse bilemedi', 'nobody', 'ghost');
-      return html;
+      var body = answerBox(G.item.ans) +
+        '<div class="hero"><div class="num">' + G.n + ' <small>/ ' + S20_TOTAL + '</small></div><div class="cap">şimdi bilen ' + s20Points() + ' puan alır</div></div>';
+      return scr({ title: NAMES.s20, sub: G.item.cat, body: body,
+        foot: [G.n >= S20_TOTAL ? btn('Kimse bilemedi', 'nobody', 'out') : btn('Soru soruldu', 'asked', 'out'), btn('Biri bildi', 'swho', 'pri')] });
     },
     s_who: function () {
-      return top(s20Points() + ' puan') + '<h1>Kim bildi?</h1>' + nameList('swin') + '<div class="grow"></div>' + btn('Kimse bilemedi', 'nobody', 'ghost');
+      return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + s20Points() + ' puan', body: nameList('swin'), foot: [btn('Kimse bilemedi', 'nobody', 'ghost')] });
     },
     s_res: function () {
-      var head = G.last
-        ? '<div class="plus">+' + G.last.pts + '</div>'
-        : '<div class="who">Kimse bilemedi</div><div class="ans" style="color:var(--txt)">' + esc(G.item.ans) + '</div>';
-      return top() + head + board(true, G.last && G.last.name) + '<div class="grow"></div>' + btn('Yeni tur', 'sstart', 'pri') + btn('Ana ekran', 'home', 'ghost');
+      return scr({ title: 'Puan durumu', sub: NAMES.s20, body: heroPts() + board(true, G.last && G.last.name),
+        foot: [btn('Ana ekran', 'home', 'ghost'), btn('Sonraki', 'sstart', 'pri')] });
     },
 
     done: doneScreen
@@ -227,7 +242,7 @@
     var m = document.createElement('div');
     m.className = 'modal';
     m.innerHTML = '<div class="box" role="dialog" aria-modal="true"><h2>Oyundan çıkılsın mı?</h2>' +
-      btn('Devam et', 'xstay', 'pri') + btn('Çık', 'xleave', 'ghost') + '</div>';
+      btn('Çık', 'xleave', 'ghost') + btn('Devam et', 'xstay', 'pri') + '</div>';
     m.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (!b) return;
@@ -246,7 +261,11 @@
       var el = document.getElementById(focusId);
       if (el) el.focus();
     }
-    window.scrollTo(0, 0);
+    if (S.screen === 'bk_clue' && document.querySelectorAll) {
+      var cards = document.querySelectorAll('#ct .card');
+      var last = cards[cards.length - 1];
+      if (last && last.scrollIntoView) last.scrollIntoView({ block: 'nearest' });
+    }
   }
   function go(name) { S.screen = name; render(); }
 
