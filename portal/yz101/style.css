@@ -177,7 +177,8 @@ body[data-page="level"] .btn-row{margin-top:28px}
 html{background:#FFFAF0}
 
 /* Sekmeler: kaydırma main içinde, çubuk main'in dibine yapışır (fixed kullanılmaz) */
-body:has(.bottom-nav){height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+body:has(.bottom-nav){height:100dvh;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0!important}
+.bottom-nav{flex:none}
 body:has(.bottom-nav) header{flex:none}
 body:has(.bottom-nav) main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:0}
 body:has(.bottom-nav) main>:nth-last-child(2){margin-bottom:16px}
