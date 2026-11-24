@@ -20,7 +20,7 @@ function lockedLessonDialog(){
  const a=state?.access||{};const limit=a.daily_reached&&!a.premium&&!a.bypass;
  document.querySelector('#app-dialog')?.remove();
  const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog';d.dataset.tone='info';
- d.innerHTML=limit?'<h2>Bugünlük tamam</h2><p>Bugünlük '+PER_DAY+' dersini tamamladın. Yarın kaldığın yerden devam edersin. Hemen devam etmek istersen Premium ile sınırsız ders yapabilirsin.</p><div class="btn-row"><button class="secondary" type="button" data-x="premium">Premium</button><button class="primary" type="button" data-x="ok">Tamam</button></div>':'<h2>Sıra bekliyor</h2><p>Bu derse geçmek için önce sıradaki dersi tamamla.</p><button class="primary wide" type="button" data-x="ok">Tamam</button>';
+ d.innerHTML=limit?'<h2>'+PER_DAY+' ders tamam</h2><p>Sonraki dersin 24 saat sonra açılır. Beklemeden devam etmek için Premium.</p><div class="btn-row"><button class="secondary" type="button" data-x="premium">Premium</button><button class="primary" type="button" data-x="ok">Tamam</button></div>':'<h2>Sıra bekliyor</h2><p>Bu derse geçmek için önce sıradaki dersi tamamla.</p><button class="primary wide" type="button" data-x="ok">Tamam</button>';
  document.body.append(d);d.showModal();
  const close=()=>{d.close();d.remove();};
  d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;if(!x)return;close();if(x==='premium')premiumInfo();});
@@ -250,13 +250,13 @@ function celebrateScreen(points,first=true){
 }
 function programScreen(){
  page='program';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Ders saatin gelince hatırlatırım.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekrana ekle</b><p class="muted">Uygulamayı ana ekrana ekle.</p>${installBody('button secondary')}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Dersin açılınca hatırlatırım.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekrana ekle</b><p class="muted">Uygulamayı ana ekrana ekle.</p>${installBody('button secondary')}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
  const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
  let card;
- if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam 🎉</h2><p class="muted">Yarın 20:00'de görüşürüz. Beklemeden devam etmek istersen Premium ile sınırsız ders yapabilirsin.</p><button class="secondary wide" data-action="premium-info">Premium</button>`;
+ if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>${PER_DAY} ders tamam 🎉</h2><p class="muted">Sonraki ders: ${a.daily_unlock_at?clock(a.daily_unlock_at):'24 saat sonra'}</p><button class="secondary wide" data-action="premium-info">Beklemeden devam et</button>`;
  else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Başla</button></div>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Yeni dersler eklenince burada görünür.</p>`;
@@ -275,7 +275,7 @@ function profileView(){
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
- ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Ders saatin gelince hatırlatırım.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
+ ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Dersin açılınca hatırlatırım.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
  <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
  <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap</button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
