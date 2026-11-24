@@ -145,16 +145,20 @@ async function raiseGoal(){
  await coach('profile',{goal:to});await loadState();
  notify(`${from} için gerekli derslere ihtiyacın yok. Hedefini "${to}" yaptım.`);
 }
-async function startJourney(){await coach('start',{goal:tun.goal});await loadState();page='journey-intro';render();window.scrollTo(0,0);}
+async function startJourney(){await coach('start',{goal:tun.goal});await loadState();page='pace';render();window.scrollTo(0,0);}
 function afterLevel(){const g=goalsAvail();if(g.length===1){tun.goal=g[0];return startJourney();}page='goal';render();window.scrollTo(0,0);}
 function goalScreen(){
  root.innerHTML=`<section class="card auth"><span class="eyebrow">Hedefin</span><h1>Yapay zekayla ne yapmak istiyorsun?</h1><fieldset class="goal-choices">${goalsAvail().map(g=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" ${tun.goal===g?'checked':''}><span><strong>${g}${g==='Üretmek'?' <em class="pill">Önerilen</em>':''}</strong><small class="muted">${goalInfo[g]}</small></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="goal-next" disabled>Devam</button></section>`;
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
 }
+function paceScreen(){
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="muted">Her gün ${PER_DAY} ders ücretsiz. Daha hızlı ilerlemek istersen Premium ile sınırsız ders yapabilirsin.</p><button class="primary wide actions" data-action="pace-free">Günde ${PER_DAY} ders · Ücretsiz</button><button class="secondary wide" data-action="pace-premium">Sınırsız ders · Premium <span class="pill">Yakında</span></button></section>`;
+}
 function backTarget(p){
  const done=!!state?.placement?.done,single=goalsAvail().length===1;
  if(p==='goal')return done?null:'level';
- if(p==='journey-intro')return single?(done?null:'level'):'goal';
+ if(p==='pace')return single?(done?null:'level'):'goal';
+ if(p==='journey-intro')return 'pace';
  if(p==='invite')return 'journey-intro';
  if(p==='place')return 'level';
  return null;
@@ -268,8 +272,8 @@ function profileView(){
 function render(){
  clearInterval(countdownTimer);document.body.dataset.page=page;
  if(!session||!state){welcome();return;}
- if(!state.profile&&!['goal','level','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
- const tunnel={goal:goalScreen,level:levelScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
+ if(!state.profile&&!['goal','level','pace','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
+ const tunnel={goal:goalScreen,level:levelScreen,pace:paceScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
  if(tunnel[page]){tunnel[page]();root.insertAdjacentHTML('afterbegin',backBtn(page));return;}
  if(['place','place-result','celebrate','lesson'].includes(page))return;
  const v={home:homeView,journey:journeyView,profile:profileView}[page]||homeView;
@@ -281,7 +285,6 @@ function render(){
 /* ---------- Ders ekranı ---------- */
 const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
  onExit:()=>go('home'),
- gate:()=>emailGate(),
  onCompleted:async(task,info)=>{
   await loadState();
   let first=false;try{first=!localStorage.getItem(firstKey());if(first)localStorage.setItem(firstKey(),'1');}catch{}
@@ -314,6 +317,8 @@ root.addEventListener('click',event=>{
   if(a==='goal-next'){if(!tun.goal)return;await startJourney();return;}
   if(a==='back'){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
   if(a==='level-skip'){afterLevel();return;}
+  if(a==='pace-free'){page='journey-intro';render();window.scrollTo(0,0);return;}
+  if(a==='pace-premium'){notify('Premium çok yakında. Şimdilik her gün 2 ders ücretsiz.');return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
   if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
   if(a==='place-next'){afterLevel();return;}
