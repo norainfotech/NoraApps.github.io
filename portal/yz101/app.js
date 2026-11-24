@@ -15,6 +15,18 @@ function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  d.querySelector('button').addEventListener('click',close);
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
+function premiumInfo(){showResultDialog('Premium','Premium çok yakında. Açıldığında sınırsız ders yapabilirsin. Şimdilik her gün 2 ders ücretsiz.','Tamam');}
+function lockedLessonDialog(){
+ const a=state?.access||{};const limit=a.daily_reached&&!a.premium&&!a.bypass;
+ document.querySelector('#app-dialog')?.remove();
+ const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog';d.dataset.tone='info';
+ d.innerHTML=limit?'<h2>Bugünlük tamam</h2><p>Bugünlük '+PER_DAY+' dersini tamamladın. Yarın kaldığın yerden devam edersin. Hemen devam etmek istersen Premium ile sınırsız ders yapabilirsin.</p><div class="btn-row"><button class="secondary" type="button" data-x="premium">Premium</button><button class="primary" type="button" data-x="ok">Tamam</button></div>':'<h2>Sıra bekliyor</h2><p>Bu derse geçmek için önce sıradaki dersi tamamla.</p><button class="primary wide" type="button" data-x="ok">Tamam</button>';
+ document.body.append(d);d.showModal();
+ const close=()=>{d.close();d.remove();};
+ d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;if(!x)return;close();if(x==='premium')premiumInfo();});
+ d.addEventListener('cancel',e=>{e.preventDefault();close();});
+}
+document.addEventListener('yz101:premium',()=>premiumInfo());
 function failure(e){if(e?.cancelled)return;let message=e?.message||'Olmadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postana gelen kodu gir.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
 async function detachPush(){try{if(!('serviceWorker' in navigator))return;const r=await navigator.serviceWorker.getRegistration();const s=await r?.pushManager.getSubscription();if(s){await client.rpc('nora_push',{p_action:'remove_device',p_data:{endpoint:s.endpoint}});await s.unsubscribe();}}catch{}}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -244,7 +256,7 @@ function programScreen(){
 function homeView(){
  const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
  let card;
- if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam 🎉</h2><p class="muted">Yarın 20:00'de görüşürüz.</p>`;
+ if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam 🎉</h2><p class="muted">Yarın 20:00'de görüşürüz. Beklemeden devam etmek istersen Premium ile sınırsız ders yapabilirsin.</p><button class="secondary wide" data-action="premium-info">Premium</button>`;
  else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Başla</button></div>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Yeni dersler eklenince burada görünür.</p>`;
@@ -255,7 +267,7 @@ function homeView(){
 }
 function journeyView(){
  const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
- return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),seq=r?.published&&!r.open&&!r.completed,can=r?.published&&!seq;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':seq?'🔒':'·'} ${esc(i.title)} <span>${can?'›':seq?'Önceki ders bitince':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+ return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),seq=r?.published&&!r.open&&!r.completed,can=r?.published&&!seq;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:seq?'data-locked="1" class="settings-row seq-locked"':'disabled'}>${r?.completed?'✓':can?'○':seq?'🔒':'·'} ${esc(i.title)} <span>${can?'›':seq?'':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
@@ -309,6 +321,7 @@ root.addEventListener('click',event=>{
  execute(async()=>{
   const d=b.dataset;
   if(d.pa!==undefined){await placementAnswer(Number(d.pa));return;}
+  if(d.locked){lockedLessonDialog();return;}
   if(d.lesson){openLesson(d.lesson,d.mode||'lesson');return;}
   if(d.page){go(d.page);return;}
   if(d.goal){await coach('profile',{goal:d.goal});await loadState();render();notify('Hedefin güncellendi.');return;}
@@ -320,7 +333,7 @@ root.addEventListener('click',event=>{
   if(a==='back'){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
   if(a==='level-skip'){afterLevel();return;}
   if(a==='pace-free'){page='journey-intro';render();window.scrollTo(0,0);return;}
-  if(a==='pace-premium'){notify('Premium çok yakında. Şimdilik her gün 2 ders ücretsiz.');return;}
+  if(a==='pace-premium'||a==='premium-info'){premiumInfo();return;}
   if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
   if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
   if(a==='place-next'){afterLevel();return;}

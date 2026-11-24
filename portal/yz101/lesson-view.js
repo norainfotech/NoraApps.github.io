@@ -83,7 +83,7 @@ window.createYZ101LessonView=function(opts){
  }
 
  function limitMessage(status){
-  if(status==='daily_limit'){modal('Bugünlük tamam','<p>Bugünlük 2 dersini tamamladın. Yarın kaldığın yerden devam edebilirsin.</p>','Tamam',showHome);return true;}
+  if(status==='daily_limit'){modal('Bugünlük tamam','<p>Bugünlük 2 dersini tamamladın. Yarın kaldığın yerden devam edersin. Hemen devam etmek istersen Premium ile sınırsız ders yapabilirsin.</p>','Tamam',showHome,{secondary:'Premium',onSecondary:()=>{showHome();document.dispatchEvent(new CustomEvent('yz101:premium'));}});return true;}
   return false;
  }
 
