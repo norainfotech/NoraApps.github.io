@@ -121,6 +121,13 @@ let tun={goal:null};
 const tickGoals=()=>{const fs=root.querySelector('.goal-choices');if(!fs)return;const idx=[...fs.querySelectorAll('input')].findIndex(x=>x.checked);fs.querySelectorAll('.goal-choice').forEach((l,i)=>{l.classList.toggle('in',i<=idx);l.querySelector('strong').dataset.tick=idx>=0&&i<=idx?'✓':'';});root.querySelector('[data-action="goal-next"]').disabled=idx<0;};
 const startIdx=()=>Math.max(0,stageLevels.indexOf(state?.placement?.result||'Başlangıç'));
 const goalsAvail=()=>goals.slice(startIdx());
+async function raiseGoal(){
+ if(!state?.profile)return;const need=startIdx();
+ if(goals.indexOf(state.profile.goal)>=need)return;
+ const from=goals.slice(0,need).map(g=>`"${g}"`).join(' ve '),to=goals[need];
+ await coach('profile',{goal:to});await loadState();
+ notify(`${from} için gerekli derslere ihtiyacın yok. Hedefini "${to}" yaptım.`);
+}
 async function startJourney(){await coach('start',{goal:tun.goal});await loadState();page='journey-intro';render();window.scrollTo(0,0);}
 function afterLevel(){const g=goalsAvail();if(g.length===1){tun.goal=g[0];return startJourney();}page='goal';render();window.scrollTo(0,0);}
 function goalScreen(){
@@ -236,7 +243,7 @@ function profileView(){
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="row"><button class="primary">Kaydet</button><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button></div></form>
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
- <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goals.map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
+ <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
  <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a><a class="settings-link" href="gizlilik-politikasi.html">Gizlilik Politikası <span>›</span></a><a class="settings-link" href="kullanim-kosullari.html">Kullanım Koşulları <span>›</span></a><a class="settings-link" href="mailto:all.apps.nora@gmail.com">Yardım ve iletişim <span>↗</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section>${installCard(false)}`;
 }
 
@@ -318,6 +325,7 @@ async function init(){
  await loadState();
  history.replaceState({yz101:true,page:'home'},'',location.pathname);
  page=state.profile?'home':state.placement?.done?'goal':'level';render();
+ await raiseGoal().then(()=>render()).catch(()=>{});
 }
 init().catch(e=>{root.innerHTML='<section class="card auth"><h1>Bağlantı kurulamadı.</h1><p>Sayfayı yenileyerek tekrar deneyebilirsin.</p><a class="button" href="./">Yenile</a></section>';failure(e);});
 try{const clr=()=>{if(document.visibilityState==='visible'&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});};document.addEventListener('visibilitychange',clr);clr();}catch{}
