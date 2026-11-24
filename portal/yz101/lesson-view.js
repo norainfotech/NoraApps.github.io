@@ -138,7 +138,8 @@ window.createYZ101LessonView=function(opts){
     d.request=null;d.retry=null;
     const rows=rowsMarkup(data.answers,data.numeric_passed,l);
     if(data.passed){
-     modal('Dersi tamamladın',`<p class="lesson-reward">+${points} puan</p>`+rows,'Devam et',async()=>{try{await opts.gate?.('after-test');}catch{return;}opts.onCompleted?.(l.id,{points,via:testout?'test':'lesson'});},{tone:'success'});
+     const finish=async()=>{try{await opts.gate?.('after-test');}catch{return;}opts.onCompleted?.(l.id,{points,via:testout?'test':'lesson'});};
+     if(opts.skipResult?.())finish();else modal('Dersi tamamladın',`<p class="lesson-reward">+${points} puan</p>`+rows,'Devam et',finish,{tone:'success'});
     }else if(testout&&!locked()){
      modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;testPage=0;d.answers=[];d.numeric='';d.retry=null;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
     }else if(locked()){

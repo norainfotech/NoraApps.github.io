@@ -286,6 +286,7 @@ function render(){
 /* ---------- Ders ekranı ---------- */
 const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
  onExit:()=>go('home'),
+ skipResult:()=>{try{return !localStorage.getItem(firstKey());}catch{return false;}},
  onCompleted:async(task,info)=>{
   await loadState();
   let first=false;try{first=!localStorage.getItem(firstKey());if(first)localStorage.setItem(firstKey(),'1');}catch{}
