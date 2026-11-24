@@ -15,7 +15,7 @@ function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  d.querySelector('button').addEventListener('click',close);
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
-function failure(e){if(e?.cancelled)return;let message=e?.message||'İşlem tamamlanamadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postandaki doğrulama bağlantısını aç.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
+function failure(e){if(e?.cancelled)return;let message=e?.message||'Olmadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postana gelen kodu gir.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
 async function detachPush(){try{if(!('serviceWorker' in navigator))return;const r=await navigator.serviceWorker.getRegistration();const s=await r?.pushManager.getSubscription();if(s){await client.rpc('nora_push',{p_action:'remove_device',p_data:{endpoint:s.endpoint}});await s.unsubscribe();}}catch{}}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function coach(action,data={}){const {data:r,error}=await client.rpc('yz101_coach',{p_action:action,p_data:data});if(error)throw error;return r;}
@@ -44,7 +44,7 @@ function installCard(dismissible){
  if(isStandalone())return '';
  try{if(dismissible&&localStorage.getItem('yz101_install_off'))return '';}catch{}
  const close=dismissible?'<button type="button" class="text install-close" data-action="install-off" aria-label="Kapat">Şimdi değil</button>':'';
- return '<section class="card install-card" id="install-card"><strong>Ana ekranına ekle</strong><p class="muted">Tek dokunuşla aç, günlük ders bildirimini al.</p>'+installBody()+close+'</section>';
+ return '<section class="card install-card" id="install-card"><strong>Ana ekrana ekle</strong><p class="muted">Ders saatin gelince hatırlatma gelir.</p>'+installBody()+close+'</section>';
 }
 const mascots={fox:{name:'Tilki',color:'#f3b579'},owl:{name:'Baykuş',color:'#b3a1db'},cat:{name:'Kedi',color:'#e4b5cf'},panda:{name:'Panda',color:'#b4d7c5'}};
 function avatarId(){const id=session?.user?.user_metadata?.yz101_mascot;return mascots[id]?id:'fox';}
@@ -105,7 +105,7 @@ function codeDialog({title,intro,send,verify,done,dismissible=false}){
   document.body.append(d);d.showModal();stepEmail();
  });
 }
-function gateError(e){const m=e?.message||'';if(/already|registered|exists/i.test(m))return 'Bu e-posta başka bir hesapta kayıtlı. Başka bir e-posta dene.';if(/rate|seconds|too many/i.test(m))return 'Çok sık denedin. Biraz bekleyip tekrar dene.';if(/invalid.*email|valid email/i.test(m))return 'E-posta adresi geçersiz.';if(/not found|signups not allowed|user/i.test(m))return 'Bu e-postayla kayıtlı hesap bulunamadı.';return 'İşlem tamamlanamadı. Tekrar dene.';}
+function gateError(e){const m=e?.message||'';if(/already|registered|exists/i.test(m))return 'Bu e-posta başka bir hesapta kayıtlı. Başka bir e-posta dene.';if(/rate|seconds|too many/i.test(m))return 'Çok sık denedin. Biraz bekleyip tekrar dene.';if(/invalid.*email|valid email/i.test(m))return 'E-posta adresi geçersiz.';if(/not found|signups not allowed|user/i.test(m))return 'Bu e-postayla kayıtlı hesap bulunamadı.';return 'Olmadı. Tekrar dene.';}
 function emailGate(soft=false){
  if(!state?.account?.anonymous)return Promise.resolve();
  return codeDialog({dismissible:soft,title:'İlerlemeni kaydet',intro:'E-postanı yaz. Telefonunu değiştirsen de kaldığın yerden devam edersin.',
@@ -125,7 +125,7 @@ async function startAnonymous(){
  state.profile?go('home'):render();
 }
 async function loginFlow(){
- await codeDialog({dismissible:true,title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana kod gönderelim.',
+ await codeDialog({dismissible:true,title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana bir kod göndereceğim.',
   send:async email=>{const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;},
   verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});if(error)throw error;session=data.session;},
   done:async()=>{await loadState();}});
@@ -147,7 +147,7 @@ async function raiseGoal(){
 async function startJourney(){await coach('start',{goal:tun.goal});await loadState();page='pace';render();window.scrollTo(0,0);}
 function afterLevel(){const g=goalsAvail();if(g.length===1){tun.goal=g[0];return startJourney();}page='goal';render();window.scrollTo(0,0);}
 function goalScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Hedefin</span><h1>Yapay zekayla ne yapmak istiyorsun?</h1><fieldset class="goal-choices">${goalsAvail().map(g=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" ${tun.goal===g?'checked':''}><span><strong>${g}${g==='Üretmek'?' <em class="pill">Önerilen</em>':''}</strong><small class="muted">${goalInfo[g]}</small></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="goal-next" disabled>Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Hedefin</span><h1>Yapay zekayla ne yapmak istiyorsun?</h1><fieldset class="goal-choices">${goalsAvail().map(g=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" ${tun.goal===g?'checked':''}><span><strong>${g}${g==='Üretmek'?' <em class="pill">Önerilen</em>':''}</strong><small class="muted">${goalInfo[g]}</small></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="goal-next" disabled>Devam et</button></section>`;
  root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
 }
 function paceScreen(){
@@ -164,7 +164,7 @@ function backTarget(p){
 }
 const backBtn=p=>backTarget(p)?'<button type="button" class="back-btn" data-action="back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>':'';
 function levelScreen(){
- root.innerHTML=`<section class="card auth level"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="placement">Seviyemi AI Koçu belirlesin</button><button class="primary" data-action="level-skip">Baştan başlayacağım</button></div></section>`;
+ root.innerHTML=`<section class="card auth level"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="placement">Seviyemi koç belirlesin</button><button class="primary" data-action="level-skip">Baştan başlayacağım</button></div></section>`;
 }
 function roadmap(){
  const gi=goals.indexOf(state.profile.goal),total=goalCount();
@@ -187,12 +187,12 @@ function animateCount(){
 }
 function journeyIntro(){
  const n=daysLeft();
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${PER_DAY} dersle yaklaşık ${n} günde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${PER_DAY} dersle yaklaşık ${n} günde <b>${esc(state.profile.goal)}</b> hedefine ulaşırsın.</p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam et</button></section>`;
  animateCount();
 }
 function inviteScreen(){
  const n=nextLesson();
- if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler hazır olunca burada olacak.</p><button class="primary wide actions" data-action="to-home">Devam</button></section>`;return;}
+ if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler eklenince burada görünür.</p><button class="primary wide actions" data-action="to-home">Devam et</button></section>`;return;}
  root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Buradan başlıyoruz. Bildiğin bir konuysa doğrudan teste geçebilirsin.</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button></div></section>`;
 }
 
@@ -227,18 +227,18 @@ function placementResult(x){
   :lvl==='İleri'?[`"Anlamak" ve "Kullanmak" için gerekli derslere ihtiyacın yok.`,`+${pts} puan`,`Programını "Üretmek" için gerekli derslerle başlatıyorum.`]
   :['Temelden başlıyoruz.','','Zor olmayacak.'];
  page='place-result';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>${esc(g)}</h1><p>${esc(copy[0])}</p>${copy[1]?`<p class="lesson-reward">${esc(copy[1])}</p>`:''}<p>${esc(copy[2])}</p><button class="primary wide actions" data-action="place-next">Devam</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>${esc(g)}</h1><p>${esc(copy[0])}</p>${copy[1]?`<p class="lesson-reward">${esc(copy[1])}</p>`:''}<p>${esc(copy[2])}</p><button class="primary wide actions" data-action="place-next">Devam et</button></section>`;
 }
 
 /* ---------- Kutlama ve program ---------- */
 let celebrateFirst=false;
 function celebrateScreen(points,first=true){
  page='celebrate';celebrateFirst=first;
- root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><p class="lesson-reward">+${points} puan</p><p class="muted">${first?'İlk adım en zoru. Devam ediyoruz.':'Güzel ilerliyorsun.'}</p><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam</button></div></section>`;
+ root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><p class="lesson-reward">+${points} puan</p><p class="muted">${first?'İlk adım en zoru. Devam ediyoruz.':'Güzel ilerliyorsun.'}</p><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam et</button></div></section>`;
 }
 function programScreen(){
  page='program';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Ders saatin gelince haber gelir.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody('button secondary')}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Ders saatin gelince hatırlatırım.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekrana ekle</b><p class="muted">Uygulamayı ana ekrana ekle.</p>${installBody('button secondary')}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
@@ -247,7 +247,7 @@ function homeView(){
  if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam 🎉</h2><p class="muted">Yarın 20:00'de görüşürüz.</p>`;
  else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Başla</button></div>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
- else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Hazır olunca burada göreceksin.</p>`;
+ else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Yeni dersler eklenince burada görünür.</p>`;
  const done=Math.min(doneCount(),goalCount());
  return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
  <button class="card progress-strip" data-page="journey" aria-label="Dersler sayfasını aç"><span><strong>${esc(u.goal)}</strong><span class="muted">${done}/${goalCount()} ders</span></span><progress max="${goalCount()}" value="${done}"></progress></button>
@@ -255,7 +255,7 @@ function homeView(){
 }
 function journeyView(){
  const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
- return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),seq=r?.published&&!r.open&&!r.completed,can=r?.published&&!seq;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':seq?'🔒':'·'} ${esc(i.title)} <span>${can?'›':seq?'Sıra gelince':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+ return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),seq=r?.published&&!r.open&&!r.completed,can=r?.published&&!seq;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':seq?'🔒':'·'} ${esc(i.title)} <span>${can?'›':seq?'Önceki ders bitince':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
@@ -263,7 +263,7 @@ function profileView(){
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
- ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Ders saatin gelince haber gelir.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
+ ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Ders saatin gelince hatırlatırım.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
  <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
  <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
@@ -295,7 +295,7 @@ const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.
 });
 function openLesson(id,mode){
  const lr=rows().find(r=>r.task_id===id);
- if(!lr?.published){notify('Bu ders henüz hazır değil.');return;}
+ if(!lr?.published){notify('Bu ders yakında.');return;}
  if(!lr.open&&!lr.completed){notify('Önce sıradaki dersi tamamla.');return;}
  page='lesson';history.pushState({yz101:true,page:'lesson'},'',location.pathname);
  if(!lessonView.open(id,{mode})){page='home';render();}
