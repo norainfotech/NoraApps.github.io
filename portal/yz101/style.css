@@ -213,3 +213,5 @@ body:is([data-page="pace"],[data-page="level"]) main>section.auth{min-height:cal
 body[data-page="level"] main>section.auth.level{justify-content:flex-start;min-height:calc(100dvh - 170px);margin-top:10px}
 body:is([data-page="level"],[data-page="pace"]) main>section.auth>.btn-row{margin-top:auto}
 body[data-page="level"] .btn-row{margin-top:auto}
+/* Geri butonu olmayan ekranlar (seviye, sonuç, kutlama, program) içeriği aynı hizada başlatır */
+body main>section.auth:not(.welcome):first-child{margin-top:60px;min-height:calc(100dvh - 220px)}
