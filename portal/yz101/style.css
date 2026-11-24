@@ -215,3 +215,6 @@ body:is([data-page="level"],[data-page="pace"]) main>section.auth>.btn-row{margi
 body[data-page="level"] .btn-row{margin-top:auto}
 /* Geri butonu olmayan ekranlar (seviye, sonuç, kutlama, program) içeriği aynı hizada başlatır */
 body main>section.auth:not(.welcome):first-child{margin-top:60px;min-height:calc(100dvh - 170px)}
+
+/* Bağlantı olarak yazılmış butonlar da düğmelerle aynı renkte */
+a.button.primary{background:#FFC83D;color:#2B2118}a.button.secondary{background:#FFF1C9;color:#6B4400}a.button.wide{display:block;text-align:center}

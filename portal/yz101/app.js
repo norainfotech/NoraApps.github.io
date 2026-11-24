@@ -36,10 +36,9 @@ let deferredInstall=null;
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const shareIcon='<svg class="share-ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-function installBody(){
+function installBody(cls='primary wide'){
  if(isIOS())return '<ol class="install-steps"><li>Safari\'de alttaki '+shareIcon+' <b>Paylaş</b> düğmesine dokun.</li><li>Listeyi kaydırıp <b>Ana Ekrana Ekle</b>\'yi seç.</li><li><b>Ekle</b>\'ye dokun. Uygulama ana ekranında açılır; bildirimler de bundan sonra çalışır.</li></ol><p class="muted install-note">Chrome yerine Safari ile açman gerekir.</p>';
- if(deferredInstall)return '<button type="button" class="primary wide" data-action="install">Uygulamayı yükle</button>';
- return '<p class="muted">Tarayıcı menüsünden (⋮) <b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'yi seç.</p>';
+ return '<button type="button" class="'+cls+'" data-action="install">Ana ekrana ekle</button>';
 }
 function installCard(dismissible){
  if(isStandalone())return '';
@@ -232,13 +231,14 @@ function placementResult(x){
 }
 
 /* ---------- Kutlama ve program ---------- */
-function celebrateScreen(points){
- page='celebrate';
- root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>İlk dersin tamam!</h1><p class="lesson-reward">+${points} puan</p><p class="muted">İlk adım en zoru. Devam ediyoruz.</p><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam</button></div></section>`;
+let celebrateFirst=false;
+function celebrateScreen(points,first=true){
+ page='celebrate';celebrateFirst=first;
+ root.innerHTML=`<section class="card auth"><p class="celebrate-mark" aria-hidden="true">🎉</p><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><p class="lesson-reward">+${points} puan</p><p class="muted">${first?'İlk adım en zoru. Devam ediyoruz.':'Güzel ilerliyorsun.'}</p><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam</button></div></section>`;
 }
 function programScreen(){
  page='program';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody()}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Programın</span><h1>Programın hazır</h1><p>🌙 <b>20:00</b> · Günün dersi</p><ol class="setup-list">${state.account?.anonymous?`<li><b>İlerlemeni kaydet</b><p class="muted">E-postanı ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="button secondary" data-action="save-email-program">E-posta ekle</button></li>`:''}<li><b>Hatırlatmaları aç</b><p class="muted">Ders saatin gelince haber gelir.</p><a class="button secondary" href="bildirimler.html">Hatırlatmaları aç</a></li>${isStandalone()?'':`<li><b>Ana ekranına ekle</b><p class="muted">Dersine hızlı ulaş.</p>${installBody('button secondary')}</li>`}</ol><button class="primary wide actions" data-action="to-home">Başla</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
@@ -263,7 +263,7 @@ function profileView(){
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-picker" id="mascot-options" hidden><div class="mascot-options">${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div></div>
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><p class="muted">E-posta ekle; telefon değiştirsen de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
- ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Dersin zamanı gelince haber verelim.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
+ ${pushOn===false?`<section class="card install-card"><strong>Günlük ders hatırlatması</strong><p class="muted">Ders saatin gelince haber gelir.</p><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
  <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
  <a class="settings-link" href="bildirimler.html">Bildirimler <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap <span>↗</span></button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
@@ -286,11 +286,11 @@ function render(){
 /* ---------- Ders ekranı ---------- */
 const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
  onExit:()=>go('home'),
- skipResult:()=>{try{return !localStorage.getItem(firstKey());}catch{return false;}},
+ skipResult:()=>true,
  onCompleted:async(task,info)=>{
   await loadState();
   let first=false;try{first=!localStorage.getItem(firstKey());if(first)localStorage.setItem(firstKey(),'1');}catch{}
-  if(first){celebrateScreen(info.points);window.scrollTo(0,0);}else go('home');
+  celebrateScreen(info.points,first);window.scrollTo(0,0);
  }
 });
 function openLesson(id,mode){
@@ -325,13 +325,13 @@ root.addEventListener('click',event=>{
   if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';placementQuestion();window.scrollTo(0,0);return;}
   if(a==='place-next'){afterLevel();return;}
   if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
-  if(a==='celebrate-next'){programScreen();window.scrollTo(0,0);return;}
+  if(a==='celebrate-next'){if(celebrateFirst)programScreen();else go('home');window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
   if(a==='save-email'){await emailGate(true);render();paintBadge();return;}
   if(a==='save-email-program'){await emailGate(true);programScreen();return;}
   if(a==='edit-name'||a==='cancel-name'){const f=document.querySelector('#profile-form');f.hidden=a==='cancel-name'||!f.hidden;document.querySelector('[data-action="edit-name"]').setAttribute('aria-expanded',String(!f.hidden));if(!f.hidden){const i=document.querySelector('#name-editor');i.focus();i.select();}return;}
   if(a==='choose-mascot'){const p=document.querySelector('#mascot-options');p.hidden=!p.hidden;b.setAttribute('aria-expanded',String(!p.hidden));return;}
-  if(a==='install'){if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;}return;}
+  if(a==='install'){if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;}else notify('Tarayıcı menüsünden (⋮) “Uygulamayı yükle” ya da “Ana ekrana ekle”yi seç.');return;}
   if(a==='logout'){await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;page='home';welcome();}
  },b.parentElement);
 });
