@@ -16,16 +16,19 @@ function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
 function premiumInfo(){showResultDialog('Premium','Premium çok yakında. Açıldığında sınırsız ders yapabilirsin. Şimdilik her gün 2 ders ücretsiz.','Tamam');}
-function lockedLessonDialog(){
- const a=state?.access||{};const limit=a.daily_reached&&!a.premium&&!a.bypass;
+function limitDialog(){
+ const a=state?.access||{};const limit=a.daily_reached&&!a.premium&&!a.bypass;const nx=limit?null:nextLesson();
  document.querySelector('#app-dialog')?.remove();
  const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog';d.dataset.tone='info';
- d.innerHTML=limit?'<h2>Bugünkü derslerini tamamladın</h2><p>Sonraki ders 24 saat sonra açılır.</p><div class="btn-row"><button class="secondary" type="button" data-x="ok">Tamam</button><button class="primary" type="button" data-x="premium">Premium\'a geç</button></div>':'<h2>Sıra bekliyor</h2><p>Bu derse geçmek için önce sıradaki dersi tamamla.</p><button class="primary wide" type="button" data-x="ok">Tamam</button>';
+ d.innerHTML=limit?'<h2>Bugünkü derslerini tamamladın</h2><p class="big-count" data-until="'+esc(a.daily_unlock_at||'')+'">--:--:--</p><button class="primary wide" type="button" data-x="premium">Premium\'a geç</button>':'<h2>Önce sıradaki dersi tamamla</h2>'+(nx?'<button class="primary wide" type="button" data-x="go">Derse git</button>':'');
  document.body.append(d);d.showModal();
- const close=()=>{d.close();d.remove();};
- d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;if(!x)return;close();if(x==='premium')premiumInfo();});
+ let timer=null;const close=()=>{clearInterval(timer);d.close();d.remove();};
+ const cd=d.querySelector('.big-count');
+ if(cd){const tick=()=>{if(!cd.dataset.until){cd.textContent='24:00:00';return;}const s=Math.max(0,Math.ceil((Date.parse(cd.dataset.until)-nowMs())/1000));cd.textContent=[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');if(s===0){close();loadState().then(()=>{if(['home','journey'].includes(page))render();}).catch(()=>{});}};tick();timer=setInterval(tick,1000);}
+ d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;const r=d.getBoundingClientRect();const outside=e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;if(!x&&!outside)return;close();if(x==='premium')premiumInfo();if(x==='go'&&nx)openLesson(nx.task_id,'lesson');});
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
+document.addEventListener('yz101:limit',()=>{loadState().catch(()=>{}).finally(()=>limitDialog());});
 document.addEventListener('yz101:premium',()=>premiumInfo());
 let wakeLock=null;
 async function wakeOn(){try{if(!('wakeLock' in navigator)||wakeLock)return;wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}catch{}}
@@ -313,7 +316,7 @@ const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.
 function openLesson(id,mode){
  const lr=rows().find(r=>r.task_id===id);
  if(!lr?.published){notify('Bu ders yakında.');return;}
- if(!lr.open&&!lr.completed){notify('Önce sıradaki dersi tamamla.');return;}
+ if(!lr.completed&&(!lr.open||(state?.access?.daily_reached&&!state.access.premium&&!state.access.bypass))){limitDialog();return;}
  page='lesson';wakeOn();history.pushState({yz101:true,page:'lesson'},'',location.pathname);
  if(!lessonView.open(id,{mode})){page='home';render();}
  window.scrollTo(0,0);
@@ -326,7 +329,7 @@ root.addEventListener('click',event=>{
  execute(async()=>{
   const d=b.dataset;
   if(d.pa!==undefined){await placementAnswer(Number(d.pa));return;}
-  if(d.locked){lockedLessonDialog();return;}
+  if(d.locked){limitDialog();return;}
   if(d.lesson){openLesson(d.lesson,d.mode||'lesson');return;}
   if(d.page){go(d.page);return;}
   if(d.goal){await coach('profile',{goal:d.goal});await loadState();render();notify('Hedefin güncellendi.');return;}
