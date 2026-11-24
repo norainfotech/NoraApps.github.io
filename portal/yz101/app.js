@@ -235,7 +235,7 @@ function homeView(){
 }
 function journeyView(){
  const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
- return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),can=r?.published;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':'·'} ${esc(i.title)} <span>${can?'›':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+ return `<h1>Dersler</h1><p class="muted">Hedefin: ${esc(state.profile.goal)} · ${daysLeft()} ders günü</p>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),seq=r?.published&&!r.open&&!r.completed,can=r?.published&&!seq;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:'disabled'}>${r?.completed?'✓':can?'○':seq?'🔒':'·'} ${esc(i.title)} <span>${can?'›':seq?'Sıra gelince':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
@@ -274,7 +274,9 @@ const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.
  onList:async task=>{try{await emailGate();await coach('list_add',{task});await loadState();go('home');notify('Dersi listene ekledim.');}catch(e){failure(e);}}
 });
 function openLesson(id,mode){
- if(!rows().some(r=>r.task_id===id&&r.published)){notify('Bu ders henüz hazır değil.');return;}
+ const lr=rows().find(r=>r.task_id===id);
+ if(!lr?.published){notify('Bu ders henüz hazır değil.');return;}
+ if(!lr.open&&!lr.completed){notify('Önce sıradaki dersi tamamla.');return;}
  page='lesson';history.pushState({yz101:true,page:'lesson'},'',location.pathname);
  if(!lessonView.open(id,{mode})){page='home';render();}
  window.scrollTo(0,0);
