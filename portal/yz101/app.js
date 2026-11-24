@@ -176,9 +176,10 @@ function roadmap(){
   if(!left)return `<li class="done${last?' goal-stop':' mid'}"><span class="dot">${last?'🏁':'✓'}</span><div><strong>${name}</strong><small>${last?'Hedefin · tamamlandı':'Tamamlandı'}</small></div></li>`;
   cum+=left/PER_DAY;const start=prev+1,end=Math.max(start,Math.ceil(cum));prev=end;
   const days=start===end?`Gün ${start}`:`Gün ${start}–${end}`;
-  return `<li class="${last?'goal-stop':start===1?'current mid':'upcoming mid'}"><span class="dot">${last?'🏁':''}</span><div><strong>${name}</strong><small>${days}${last?' · hedefin':''}</small></div></li>`;
+  const tags=[start===1?'bugün':'',last?'hedefin':''].filter(Boolean).map(t=>` · ${t}`).join('');
+  return `<li class="${last?'goal-stop':'upcoming mid'}"><span class="dot">${last?'🏁':''}</span><div><strong>${name}</strong><small>${days}${tags}</small></div></li>`;
  }).join('');
- return `<ol class="roadmap"><li class="start"><span class="dot">📍</span><div><strong>Bugün</strong></div></li>${stops}</ol>`;
+ return `<ol class="roadmap">${stops}</ol>`;
 }
 function animateCount(){
  const el=root.querySelector('[data-count]');if(!el)return;const to=Number(el.dataset.count);
