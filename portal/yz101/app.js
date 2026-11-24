@@ -245,7 +245,7 @@ function homeView(){
  const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
  let card;
  if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünlük tamam 🎉</h2><p class="muted">Yarın 20:00'de görüşürüz.</p>`;
- else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><button class="primary wide" data-lesson="${n.task_id}" data-mode="lesson">Başla</button>`;
+ else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Başla</button></div>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Hazır olunca burada göreceksin.</p>`;
  const done=Math.min(doneCount(),goalCount());
