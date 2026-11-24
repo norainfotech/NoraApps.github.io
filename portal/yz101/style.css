@@ -222,3 +222,4 @@ a.button.primary{background:#FFC83D;color:#2B2118}a.button.secondary{background:
 .list-rows .settings-row.seq-locked{color:var(--muted);opacity:.65;cursor:pointer}
 
 a.back-btn{text-decoration:none}
+.big-count{font-size:34px;font-weight:800;letter-spacing:1px;margin:6px 0 14px;color:var(--ink)}

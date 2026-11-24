@@ -20,7 +20,7 @@ function lockedLessonDialog(){
  const a=state?.access||{};const limit=a.daily_reached&&!a.premium&&!a.bypass;
  document.querySelector('#app-dialog')?.remove();
  const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog';d.dataset.tone='info';
- d.innerHTML=limit?'<h2>'+PER_DAY+' ders tamam</h2><p>Sonraki dersin 24 saat sonra açılır. Beklemeden devam etmek için Premium.</p><div class="btn-row"><button class="secondary" type="button" data-x="premium">Premium</button><button class="primary" type="button" data-x="ok">Tamam</button></div>':'<h2>Sıra bekliyor</h2><p>Bu derse geçmek için önce sıradaki dersi tamamla.</p><button class="primary wide" type="button" data-x="ok">Tamam</button>';
+ d.innerHTML=limit?'<h2>Bugünkü derslerini tamamladın</h2><p>Sonraki ders 24 saat sonra açılır.</p><div class="btn-row"><button class="secondary" type="button" data-x="ok">Tamam</button><button class="primary" type="button" data-x="premium">Premium\'a geç</button></div>':'<h2>Sıra bekliyor</h2><p>Bu derse geçmek için önce sıradaki dersi tamamla.</p><button class="primary wide" type="button" data-x="ok">Tamam</button>';
  document.body.append(d);d.showModal();
  const close=()=>{d.close();d.remove();};
  d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;if(!x)return;close();if(x==='premium')premiumInfo();});
@@ -256,7 +256,7 @@ function programScreen(){
 function homeView(){
  const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
  let card;
- if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>${PER_DAY} ders tamam 🎉</h2><p class="muted">Sonraki ders: ${a.daily_unlock_at?clock(a.daily_unlock_at):'24 saat sonra'}</p><button class="secondary wide" data-action="premium-info">Beklemeden devam et</button>`;
+ if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünkü derslerini tamamladın</h2><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><button class="primary wide" data-action="premium-info">Premium'a geç</button>`;
  else if(n)card=`<h2>Dersin hazır.</h2><p class="muted">${esc(titleOf(n.task_id))}</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Teste hazırım</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Başla</button></div>`;
  else if(lk)card=`<h2>Sıradaki ders kilitli.</h2><p class="muted">Tekrar denemene kalan süre: ${clock(lk.locked_until)}</p>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Yeni dersler eklenince burada görünür.</p>`;
