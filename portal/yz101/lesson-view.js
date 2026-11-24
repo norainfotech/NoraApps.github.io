@@ -36,14 +36,17 @@ window.createYZ101LessonView=function(opts){
   dialog.onclose=()=>{dialog.onclose=null;sec.hidden=true;const res=dialog.dataset.res;if(o.onlyPrimary&&res!=='primary')return;if(res==='secondary'&&o.onSecondary){o.onSecondary();return;}action?.();};
   if(!dialog.open)dialog.showModal();tick();
  }
+ let testPage=0;
+ function testPages(l,d){const idx=d.retry?d.retry.q:l.questions.map((_,i)=>i);const p=idx.map(q=>({q}));if(l.numericExercise&&(!d.retry||d.retry.num))p.push({num:true});return p;}
+ function pageAnswered(l,d,pg){return pg.num?d.numeric!==undefined&&d.numeric!==''&&Number.isFinite(Number(d.numeric)):d.answers?.[pg.q]!==undefined;}
  function showHome(){if(busy)return;keepDraft();opts.onExit();}
  function keepDraft(){
   const l=lessonOf();if(!l)return;const d=drafts[l.id]||{};
   if($('#response'))d.answer=$('#response').value;
-  if($('#quiz-form')){d.answers=[0,1,2].map(i=>$(`input[name="q${i}"]:checked`)?.value);d.numeric=$('#numeric')?.value;}
+  if($('#quiz-form')){d.answers=Array.from({length:3},(_,i)=>d.answers?.[i]);document.querySelectorAll('#quiz-form fieldset[data-q]').forEach(f=>{d.answers[Number(f.dataset.q)]=f.querySelector('input:checked')?.value;});if($('#numeric'))d.numeric=$('#numeric').value;}
   drafts[l.id]=d;
  }
- function goStage(n){if(busy)return;keepDraft();stage=n;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});}
+ function goStage(n){if(busy)return;keepDraft();stage=n;testPage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});}
  function feedbackMarkup(f){return `<div class="feedback ${f.passed?'':'error'}"><strong>${f.passed?'Yeterli':'Henüz olmadı'}</strong><p>${esc(f.feedback)}</p></div>`;}
  function rowsMarkup(flags,numeric,l){return flags.map((ok,i)=>`<div class="result-row"><span>${i+1}. soru</span><strong class="${ok?'pass':'fail'}">${ok?'Doğru':'Yanlış'}</strong></div>`).join('')+(l.numericExercise&&numeric!=null?`<div class="result-row"><span>Sayısal uygulama</span><strong class="${numeric?'pass':'fail'}">${numeric?'Doğru':'Yanlış'}</strong></div>`:'');}
 
@@ -55,7 +58,10 @@ window.createYZ101LessonView=function(opts){
   }else if(stage===1){
    content=`<h2>Uygula</h2><p>${esc(l.task)}</p><p class="hint">${esc(l.practiceGuidance)}</p><label for="response">Yanıtın</label><textarea id="response" minlength="40" maxlength="1600" ${done||aiOk?'readonly':''}>${esc(d.answer||'')}</textarea><div class="field-row"><span class="field-info">Yapay zeka yanıtını değerlendirir.${!done&&!aiOk&&!access.bypass&&access.attempts_remaining!=null?` ${access.attempts_remaining} kontrol hakkın var.`:''}</span><span class="char-count" id="char-count" aria-live="off"></span></div><div id="ai-feedback" aria-live="polite">${d.feedback?feedbackMarkup(d.feedback):aiOk?'<div class="feedback"><strong>Yeterli</strong></div>':''}</div><div class="actions">${aiOk?`<button id="to-test" ${done||locked()?'disabled':''}>Teste geç</button>`:`<button id="ai-check" ${locked()?'disabled':''}>Kontrol et</button>`}<aside class="mentor-access"><button id="mentor-open" class="mentor-open" type="button"><span class="mentor-spark" aria-hidden="true">✦</span><span>Koçuna sor<small>PREMIUM</small></span><span class="mentor-arrow" aria-hidden="true">↗</span></button></aside></div>`;
   }else{
-   content=`<h2>${testout?'Kısa test':'Öğrendiklerini kontrol et'}</h2><form id="quiz-form">${l.questions.map((q,i)=>`<fieldset class="question"><legend>${i+1}. ${esc(q.prompt)}</legend>${q.options.map((o,j)=>`<label class="choice"><input type="radio" name="q${i}" value="${j}" required ${String(d.answers?.[i])===String(j)?'checked':''} ${done?'disabled':''}><span>${esc(o)}</span></label>`).join('')}</fieldset>`).join('')}${l.numericExercise?`<div class="numeric"><label for="numeric">${esc(l.numericExercise.prompt)}</label><input id="numeric" type="number" step="any" inputmode="decimal" required value="${esc(d.numeric||'')}" ${done?'disabled':''}></div>`:''}${done?'':`<button id="test-submit" type="submit" ${locked()||(!aiOk&&!testout)?'disabled':''}>${testout?'Testi bitir':'Testi tamamla'}</button>`}</form>`;
+   const pages=testPages(l,d),n=pages.length,p=Math.min(testPage,n-1),pg=pages[p],last=p===n-1,ok=pageAnswered(l,d,pg);
+   const body=pg.num?`<div class="numeric"><label for="numeric">${esc(l.numericExercise.prompt)}</label><input id="numeric" type="number" step="any" inputmode="decimal" value="${esc(d.numeric||'')}" ${done?'disabled':''}></div>`:`<fieldset class="question" data-q="${pg.q}"><legend>${esc(l.questions[pg.q].prompt)}</legend>${l.questions[pg.q].options.map((o,j)=>`<label class="choice"><input type="radio" name="q${pg.q}" value="${j}" ${String(d.answers?.[pg.q])===String(j)?'checked':''} ${done?'disabled':''}><span>${esc(o)}</span></label>`).join('')}</fieldset>`;
+   const label=d.retry?'Yeniden dene':pg.num?'Uygulama':'Soru';
+   content=`<h2>${testout?'Kısa test':'Öğrendiklerini kontrol et'}</h2><form id="quiz-form" novalidate><div class="test-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${p+1}"><span>${label} ${p+1}/${n}</span><div class="bar"><i style="width:${Math.round((p+1)/n*100)}%"></i></div></div>${body}<div class="btn-row test-nav"><button type="button" class="secondary" id="test-prev" ${p===0?'disabled':''}>Önceki</button>${last?(done?'':`<button id="test-submit" type="submit" class="primary" ${!ok||locked()||(!aiOk&&!testout)?'disabled':''}>${testout?'Testi bitir':'Testi tamamla'}</button>`):`<button type="button" class="primary" id="test-next" ${ok?'':'disabled'}>Sonraki</button>`}</div></form>`;
   }
   const steps=testout?'':`<nav class="lesson-steps" aria-label="Ders aşamaları">${['Öğren','Uygula','Test'].map((name,i)=>`<button data-stage="${i}" class="${stage===i?'active':''}" ${stage===i?'aria-current="step"':''} ${i===2&&!aiOk?'disabled':''}>${i+1} ${name}</button>`).join('')}</nav>`;
   $('#lesson').innerHTML=`<div class="lesson-meta"><span class="eyebrow">${esc(({'Başlangıç':'Anlamak','Orta':'Kullanmak','İleri':'Üretmek'})[l.level]||l.level)}${done?' · Tamamlandı ✓':''}</span></div><h1>${esc(l.title)}</h1><p class="goal">${esc(l.objective)}</p>${steps}${timerMarkup()}<section class="card lesson-detail">${content}</section>`;
@@ -64,7 +70,14 @@ window.createYZ101LessonView=function(opts){
   if($('#to-test'))$('#to-test').onclick=()=>goStage(2);
   if($('#ai-check'))$('#ai-check').onclick=()=>checkAnswer();
   if($('#response')){const c=()=>{const n=$('#response').value.length;$('#char-count').textContent=n<40?`${n} / 1600 · en az 40`:`${n} / 1600`;$('#char-count').classList.toggle('low',n<40);};$('#response').addEventListener('input',c);c();}
-  if($('#quiz-form'))$('#quiz-form').onsubmit=submitTest;
+  if($('#quiz-form')){
+   const f=$('#quiz-form'),go=k=>{keepDraft();testPage=Math.max(0,testPage+k);renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});};
+   f.onsubmit=submitTest;
+   const upd=()=>{keepDraft();const pgs=testPages(l,drafts[l.id]||{}),pg=pgs[Math.min(testPage,pgs.length-1)],ok=pageAnswered(l,drafts[l.id]||{},pg);['#test-next','#test-submit'].forEach(q=>{if($(q))$(q).disabled=!ok||(q==='#test-submit'&&(locked()||(!aiOk&&!testout)));});};
+   f.addEventListener('change',upd);f.addEventListener('input',upd);
+   if($('#test-prev'))$('#test-prev').onclick=()=>go(-1);
+   if($('#test-next'))$('#test-next').onclick=()=>go(1);
+  }
   if($('#mentor-open'))$('#mentor-open').onclick=()=>{keepDraft();if(!(access.bypass||access.premium)){modal('Koçuna sor','<p>Takıldığın noktayı koçuna sor, yanıtındaki eksiği sana özel açıklasın. Bu özellik premium üyelikte.</p><p class="field-info">Premium üyelik satışı henüz açılmadı.</p>','Tamam');return;}mentor.open({task_id:l.id,answer:drafts[l.id]?.answer||''});};
   tick();
  }
@@ -106,8 +119,10 @@ window.createYZ101LessonView=function(opts){
  async function submitTest(event){
   event.preventDefault();if(busy||locked())return;keepDraft();
   const l=lessonOf(),d=drafts[l.id],owner=user?.id,testout=mode==='testout'&&!info.completed;
-  const answers=d.answers.map(Number),numeric=l.numericExercise?Number(d.numeric):null;
-  if(d.answers.some(x=>x===undefined)||l.numericExercise&&(d.numeric===''||!Number.isFinite(numeric)))return;
+  const answers=Array.from({length:3},(_,i)=>d.answers[i]),numeric=l.numericExercise?Number(d.numeric):null;
+  const pgs=testPages(l,d),pi=pgs.findIndex(pg=>!pageAnswered(l,d,pg));
+  if(pi>=0){testPage=pi;renderLesson();return;}
+  answers.forEach((x,i)=>answers[i]=Number(x));
   // Aynı istek kimliği: bağlantı kopsa bile ikinci hak harcanmaz.
   const signature=JSON.stringify([testout,answers,numeric]);
   if(d.signature!==signature){d.signature=signature;d.request=crypto.randomUUID();}d.request||=crypto.randomUUID();
@@ -120,16 +135,16 @@ window.createYZ101LessonView=function(opts){
    const points=(opts.getState()?.lessons||[]).find(x=>x.task_id===l.id)?.points||10;
    await loadState();setBusy(false);renderLesson();
    if(data.status==='evaluated'){
-    d.request=null;
+    d.request=null;d.retry=null;
     const rows=rowsMarkup(data.answers,data.numeric_passed,l);
     if(data.passed){
      modal('Dersi tamamladın',`<p class="lesson-reward">+${points} puan</p>`+rows,'Devam et',async()=>{try{await opts.gate?.('after-test');}catch{return;}opts.onCompleted?.(l.id,{points,via:testout?'test':'lesson'});},{tone:'success'});
     }else if(testout&&!locked()){
-     modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;d.answers=[];d.numeric='';renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{secondary:'Sonra',onSecondary:()=>opts.onExit?.(),tone:'error'});
+     modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;testPage=0;d.answers=[];d.numeric='';d.retry=null;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
     }else if(locked()){
      modal('Testi geçemedin',rows+'<p>Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
     }else{
-     modal('Testi geçemedin',rows,'Tekrar dene',()=>{d.answers=[];d.numeric='';renderLesson();},{tone:'error'});
+     modal('Testi geçemedin',rows,'Tekrar dene',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;renderLesson();},{tone:'error'});
     }
    }else if(data.status==='cooldown'){modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);}
    else if(data.status==='already_completed')showHome();
@@ -148,7 +163,7 @@ window.createYZ101LessonView=function(opts){
   open(id,o={}){
    if(busy)return false;const nextUser=opts.getUser();if(user?.id!==nextUser?.id)drafts={};user=nextUser;
    const meta=LESSONS.find(l=>l.id===id);if(!meta)return false;
-   taskId=id;mode=o.mode||'lesson';sync();
+   taskId=id;mode=o.mode||'lesson';testPage=0;sync();
    const s=opts.getState();
    if(!info.completed&&s?.access?.daily_reached&&!s.access.premium&&!s.access.bypass){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';limitMessage('daily_limit');return true;}
    if(locked()&&!info.completed){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);return true;}

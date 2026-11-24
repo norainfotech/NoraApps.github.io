@@ -15,3 +15,5 @@
 
 .mentor-dialog #mentor-form button{color:#fff!important;font-weight:700}
 [data-lesson-view] .field-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 12px}[data-lesson-view] .field-row .field-info{margin:0}.char-count{font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}.char-count.low{color:#a22c2c}
+
+[data-lesson-view] .test-progress{margin:4px 0 18px}[data-lesson-view] .test-progress span{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}[data-lesson-view] .test-progress .bar{height:6px;border-radius:99px;background:#F1E6CF;overflow:hidden}[data-lesson-view] .test-progress .bar i{display:block;height:100%;border-radius:99px;background:#FFC83D;transition:width .2s}[data-lesson-view] .test-nav{margin-top:20px}[data-lesson-view] .test-nav button:disabled{opacity:.45}
