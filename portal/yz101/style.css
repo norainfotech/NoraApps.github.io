@@ -223,3 +223,5 @@ a.button.primary{background:#FFC83D;color:#2B2118}a.button.secondary{background:
 
 a.back-btn{text-decoration:none}
 .big-count{font-size:34px;font-weight:800;letter-spacing:1px;margin:6px 0 14px;color:var(--ink)}
+
+button.primary,button.secondary,a.button,.btn-row button{text-align:center;justify-content:center}
