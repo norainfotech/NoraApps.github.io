@@ -374,8 +374,9 @@ async function init(){
  const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
  if(!session){welcome();return;}
  try{await loadState();}catch(e){const {error:ue}=await client.auth.getUser();if(!ue)throw e;await client.auth.signOut({scope:'local'});session=null;state=null;welcome();return;}
- history.replaceState({yz101:true,page:'home'},'',location.pathname);
- page=state.profile?'home':state.placement?.done?'goal':'level';render();
+ const back=history.state?.yz101&&mainPages.includes(history.state.page)?history.state.page:'home';
+ history.replaceState({yz101:true,page:back},'',location.pathname);
+ page=state.profile?back:state.placement?.done?'goal':'level';render();
  await raiseGoal().then(()=>render()).catch(()=>{});
  checkPush();
 }
