@@ -103,7 +103,7 @@
   function scr(o) {
     var hd, mid;
     if (o.home) {
-      hd = '<div class="hd"><span class="brand big"><img class="logo" src="icon-192.png" alt="" width="48" height="48"><span>Uzun Yol Oyunları</span></span></div>';
+      hd = '<div class="hd"><span class="brand big"><img class="logo" src="icon-192.png" alt="" width="48" height="48"><span>Uzun Yol Oyunları</span></span><button class="hd-btn" data-a="share" aria-label="Paylaş"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button></div>';
       mid = '<div class="slogan-wrap">' + SLOGAN + '</div>';
     } else {
       hd = '<div class="hd"><button class="back" data-a="back" aria-label="Geri">‹</button>' +
@@ -211,7 +211,7 @@
           '<div class="tsub"><span>Ben Kimim? ' + x.bk + '</span><span>20 Soru ' + x.s20 + '</span></div></div>';
       }).join('') : '<div class="empty">Henüz puan yok.<br>Ben Kimim? ve 20 Soru\'da kazanılan puanlar burada birikir.</div>';
       return scr({ title: 'Puan tablosu', sub: 'Bu telefonda kazanılanlar', body: body,
-        top: rows.length > 0, foot: rows.length ? [btn('Puanları sıfırla', 'askreset', 'none')] : [] });
+        top: rows.length > 0, foot: rows.length ? [btn('Puanları sıfırla', 'askreset', 'none'), btn('Puanları paylaş', 'shareboard', 'pri')] : [] });
     },
 
     // --- Bilgi Yarışması ---
@@ -386,6 +386,8 @@
       render();
     },
     board: function () { go('totals'); },
+    share: function () { shareOut('Arabada oynayacağımız oyunlar: Uzun Yol Oyunları'); },
+    shareboard: function () { shareOut(boardText()); },
     askreset: function () {
       var m = document.createElement('div');
       m.className = 'modal';
@@ -477,7 +479,77 @@
     });
   }
 
+  // ---------- paylaşım ----------
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+  }
+  function shareOut(text) {
+    var url = location.origin + '/';
+    if (navigator.share) {
+      navigator.share({ title: 'Uzun Yol Oyunları', text: text, url: url }).catch(function () { /* vazgeçti */ });
+      return;
+    }
+    var full = text + ' ' + url;
+    try {
+      navigator.clipboard.writeText(full).then(function () { toast('Kopyalandı'); }, function () { toast(url); });
+    } catch (e) { toast(url); }
+  }
+  function boardText() {
+    var rows = Object.keys(totals).map(function (n) { var t = totals[n]; return { n: n, v: (t.bk || 0) + (t.s20 || 0) }; })
+      .filter(function (x) { return x.v > 0; })
+      .sort(function (a, b) { return b.v - a.v; });
+    return 'Uzun Yol Oyunları puan tablosu:\n' + rows.map(function (x, i) { return (i + 1) + '. ' + x.n + ' - ' + x.v; }).join('\n') + '\nSen de oyna:';
+  }
+
+  // ---------- ana ekrana ekleme daveti ----------
+  var deferredInstall = null;
+  var INVITE_GAP = 7 * 24 * 3600 * 1000;
+  function isStandalone() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  }
+  function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent || ''); }
+  function maybeInvite() {
+    if (isStandalone() || S.screen !== 'home' || document.querySelector('.modal')) return;
+    if (!(deferredInstall || isIOS())) return;
+    var last = store.get('ulo_invite', 0);
+    if (last && Date.now() - last < INVITE_GAP) return;
+    showInvite();
+  }
+  function showInvite() {
+    var m = document.createElement('div');
+    m.className = 'modal';
+    var box = '<div class="box" role="dialog" aria-modal="true"><h2>Kolay kullanım için ana ekrana ekle</h2>' +
+      '<p class="clue cur">Tek dokunuşla açılır, internet olmadan da çalışır.</p>' +
+      btn('Ana ekrana ekle', 'inst', 'pri') + btn('Daha sonra', 'later', 'ghost') + '</div>';
+    m.innerHTML = box;
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var a = b.getAttribute('data-a');
+      if (a === 'later') { store.set('ulo_invite', Date.now()); document.body.removeChild(m); }
+      else if (a === 'inst') {
+        if (deferredInstall) {
+          var d = deferredInstall; deferredInstall = null;
+          document.body.removeChild(m);
+          try { d.prompt(); } catch (err) { /* sessiz */ }
+        } else {
+          m.querySelector('.box').innerHTML = '<h2>Ana ekrana ekle</h2>' +
+            '<p class="clue cur">1. Safari\'de alttaki Paylaş simgesine dokun.<br>2. "Ana Ekrana Ekle"yi seç.<br>3. Sağ üstte "Ekle"ye dokun.</p>' +
+            btn('Tamam', 'later', 'pri');
+        }
+      }
+    });
+    document.body.appendChild(m);
+  }
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; setTimeout(maybeInvite, 1200); });
+  window.addEventListener('appinstalled', function () { store.set('ulo_invite', Date.now() * 10); });
+
   ping('open');
   if (!store.get('ulo_seen_app', false)) { store.set('ulo_seen_app', true); ping('first_open'); }
   render();
+  setTimeout(maybeInvite, 1800);
 })();
