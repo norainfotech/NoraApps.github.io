@@ -173,3 +173,23 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--acc); outli
 /* kimse bilemedi: farklı renk */
 .btn.none { background: transparent; border-color: var(--bad); color: var(--bad); }
 .ring .of { font-size: 13px; line-height: 16px; text-align: center; max-width: 100px; }
+
+/* tahmin sırası + cevap çipi */
+.pin-in { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 4px; }
+.turn { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.t-l { font-size: 13px; line-height: 16px; font-weight: 800; color: var(--mut); }
+.t-n { max-width: 100%; padding: 5px 18px; border-radius: 999px; background: var(--acc); color: var(--bg); font-size: 18px; line-height: 24px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ans-chip { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 5px 5px 5px 16px; border-radius: 999px; background: rgba(79,209,165,.14); border: var(--b) solid var(--ok); }
+.ans-chip .lbl { font-size: 13px; color: var(--ok); }
+.ans-chip .ans { font-size: 20px; line-height: 24px; color: var(--txt); min-width: 0; }
+.eye { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(79,209,165,.28); color: var(--ok); display: flex; align-items: center; justify-content: center; padding: 0; }
+/* ana ekran kupa düğmesi, puan tablosu */
+.hd { position: relative; }
+.hd-btn { position: absolute; right: -6px; top: 4px; width: 48px; height: 48px; border: 0; background: none; color: var(--mut); display: flex; align-items: center; justify-content: center; padding: 0; }
+.tot { gap: 4px; }
+.tsub { display: flex; justify-content: space-between; font-size: var(--t-sm); font-weight: 700; color: var(--mut); }
+.empty { text-align: center; color: var(--mut); font-size: 16px; line-height: 1.5; font-weight: 700; }
+.add .btn { width: 104px; }
+
+.t-n { background: #FFC857; color: var(--bg); }
+.btn.gold { background: transparent; border-color: #FFC857; color: #FFC857; }

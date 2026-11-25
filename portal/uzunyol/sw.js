@@ -1,6 +1,6 @@
 // Çevrimdışı çalışma: dosyalar ilk açılışta önbelleğe alınır.
 // İçerik veya kod değişince VERSION'ı artır.
-var VERSION = 'ulo-v4';
+var VERSION = 'ulo-v5';
 var FILES = [
   './', 'index.html', 'style.css', 'app.js', 'content.js',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'

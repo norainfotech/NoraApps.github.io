@@ -41,6 +41,12 @@
   var seen = store.get('ulo_seen', { by: [], bk: [], s20: [] });
   var S = { screen: 'home', open: null, after: null };
   var G = null;
+  var totals = store.get('ulo_totals', {});
+  function addTotal(name, key, pts) {
+    if (!totals[name]) totals[name] = { bk: 0, s20: 0 };
+    totals[name][key] = (totals[name][key] || 0) + pts;
+    store.set('ulo_totals', totals);
+  }
   var wakeLock = null;
 
   // ---------- yardımcılar ----------
@@ -129,11 +135,15 @@
       return '<button class="cat' + (c === sel ? ' sel' : '') + '" data-a="cat" data-v="' + esc(c) + '">' + esc(c) + '</button>';
     }).join('') + '</div>';
   }
+  var EYE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>';
+  function turnRow() {
+    return '<div class="turn"><span class="t-l">Tahmin sırası</span><span class="t-n">' + esc(players[G.turn % players.length]) + '</span></div>';
+  }
   function answerBox(text) {
-    var label = G.show ? 'Gizle' : 'Göster';
-    return '<div class="card ans-card"><div class="ans-l"><span class="lbl">Cevap</span>' +
-      (G.show ? '<span class="ans">' + esc(text) + '</span>' : '<span class="ans" aria-hidden="true">•••••</span>') + '</div>' +
-      '<button class="hide-btn" data-a="toggle">' + label + '</button></div>';
+    return '<div class="pin-in">' + turnRow() + '<div class="ans-chip"><span class="lbl">Cevap</span>' +
+      (G.show ? '<span class="ans">' + esc(text) + '</span>' : '<span class="ans" aria-hidden="true">\u2022\u2022\u2022\u2022\u2022</span>') +
+      '<button class="eye" data-a="toggle" aria-label="' + (G.show ? 'Cevabı gizle' : 'Cevabı göster') + '">' + (G.show ? EYE_OFF : EYE) + '</button></div></div>';
   }
   function counter() {
     var r = S20_TOTAL - G.n, p = Math.round(r / S20_TOTAL * 100);
@@ -175,7 +185,7 @@
           '<span class="g-name">' + NAMES[k] + '</span><span class="g-tag">' + TAGS[k] + '</span></button>' +
           '<button class="g-i" data-a="info" data-v="' + k + '" aria-label="' + NAMES[k] + ' hakkında bilgi">i</button></div>';
       }).join('') + '</div>';
-      return scr({ home: true, body: body });
+      return scr({ home: true, body: body, foot: [btn('Puan tablosu', 'board', 'gold')] });
     },
 
     players: function () {
@@ -183,11 +193,25 @@
         return '<div class="pair"><div class="row-b">' + esc(p) + '</div><button class="x" data-a="delp" data-v="' + i + '" aria-label="' + esc(p) + ' sil">×</button></div>';
       }).join('');
       if (players.length < MAX_PLAYERS) {
-        body += '<div class="pair add"><input id="pname" type="text" maxlength="14" placeholder="İsim" autocomplete="off" aria-label="Oyuncu adı">' + btn('Ekle', 'addp', 'ghost') + '</div>';
+        body += S.adding
+          ? '<div class="pair add"><input id="pname" type="text" maxlength="14" placeholder="İsim" autocomplete="off" aria-label="Oyuncu adı">' + btn('Tamam', 'okp', 'pri') + '</div>'
+          : btn('+ Oyuncu ekle', 'addp', 'out');
       }
       var need = players.length < 2;
       return scr({ title: 'Kimler oynuyor?', sub: (S.after ? NAMES[S.after] + ' · ' : '') + 'en az 2, en fazla ' + MAX_PLAYERS + ' oyuncu', top: true, body: body,
         foot: [btn(need ? 'En az 2 oyuncu' : (S.after ? 'Başla' : 'Tamam'), 'pdone', 'pri', need ? ' disabled' : '')] });
+    },
+
+    totals: function () {
+      var rows = Object.keys(totals).map(function (n) { var t = totals[n]; return { n: n, bk: t.bk || 0, s20: t.s20 || 0 }; })
+        .filter(function (x) { return x.bk + x.s20 > 0; })
+        .sort(function (a, b) { return (b.bk + b.s20) - (a.bk + a.s20); });
+      var body = rows.length ? rows.map(function (x) {
+        return '<div class="card tot"><div class="srow"><span>' + esc(x.n) + '</span><span>' + (x.bk + x.s20) + '</span></div>' +
+          '<div class="tsub"><span>Ben Kimim? ' + x.bk + '</span><span>20 Soru ' + x.s20 + '</span></div></div>';
+      }).join('') : '<div class="empty">Henüz puan yok.<br>Ben Kimim? ve 20 Soru\'da kazanılan puanlar burada birikir.</div>';
+      return scr({ title: 'Puan tablosu', sub: 'Bu telefonda kazanılanlar', body: body,
+        top: rows.length > 0, foot: rows.length ? [btn('Puanları sıfırla', 'askreset', 'none')] : [] });
     },
 
     // --- Bilgi Yarışması ---
@@ -224,7 +248,7 @@
         foot: [G.clue < 5 ? btn('Sonraki ipucu', 'nextclue', 'out') : btn('Kimse bilemedi', 'nobody', 'none'), btn('Biri bildi', 'bkwho', 'pri')] });
     },
     bk_who: function () {
-      return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + (6 - G.clue) + ' puan', body: nameList('bkwin') + btn('Kimse bilemedi', 'nobody', 'none') });
+      return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + (6 - G.clue) + ' puan', body: nameList('bkwin') });
     },
     bk_score: function () {
       return scr({ title: 'Puan durumu', sub: NAMES.bk, body: heroPts() + board(true, G.last && G.last.name),
@@ -240,7 +264,7 @@
         foot: [btn('Biri bildi', 'swho', 'pri')] });
     },
     s_who: function () {
-      return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + s20Points() + ' puan', body: nameList('swin') + btn('Kimse bilemedi', 'nobody', 'none') });
+      return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + s20Points() + ' puan', body: nameList('swin') });
     },
     s_res: function () {
       return scr({ title: 'Puan durumu', sub: NAMES.s20, body: heroPts() + board(true, G.last && G.last.name),
@@ -293,7 +317,7 @@
 
   // ---------- oyun akışı ----------
   function startGame(key) {
-    G = { key: key, scores: freshScores(), cat: 'Karışık', show: true };
+    G = { key: key, scores: freshScores(), cat: 'Karışık', show: true, turn: 0 };
     ping('start_' + key);
     lock();
     if (key === 'by') startRound();
@@ -347,17 +371,33 @@
   var actions = {
     info: function (v) { showInfo(v); },
     play: function (v) {
-      if (v !== 'by') { S.after = v; return go('players'); }
+      if (v !== 'by') { S.after = v; S.adding = players.length === 0; return go('players'); }
       startGame(v);
     },
-    addp: function () {
+    addp: function () { S.adding = true; render('pname'); },
+    okp: function () {
       var inp = document.getElementById('pname');
       var name = inp ? inp.value.trim() : '';
       if (name && players.length < MAX_PLAYERS && players.indexOf(name) === -1) {
         players.push(name);
         store.set('ulo_players', players);
       }
-      render(players.length < MAX_PLAYERS ? 'pname' : null);
+      S.adding = false;
+      render();
+    },
+    board: function () { go('totals'); },
+    askreset: function () {
+      var m = document.createElement('div');
+      m.className = 'modal';
+      m.innerHTML = '<div class="box" role="dialog" aria-modal="true"><h2>Puanlar silinsin mi?</h2><p class="clue cur">Bu telefondaki tüm puanlar sıfırlanır.</p>' + btn('Sil', 'xdel', 'none') + btn('Vazgeç', 'xstay', 'pri') + '</div>';
+      m.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        e.stopPropagation();
+        document.body.removeChild(m);
+        if (b.getAttribute('data-a') === 'xdel') { totals = {}; store.set('ulo_totals', totals); render(); }
+      });
+      document.body.appendChild(m);
     },
     delp: function (v) { players.splice(+v, 1); store.set('ulo_players', players); render(); },
     pdone: function () {
@@ -365,7 +405,9 @@
       if (after && players.length >= 2) startGame(after); else go('home');
     },
     back: function () {
-      var ending = ['by_end', 'bk_score', 's_res', 'done', 'home', 'players'].indexOf(S.screen) !== -1;
+      if (S.screen === 'bk_who') return go('bk_clue');
+      if (S.screen === 's_who') return go('s_ref');
+      var ending = ['by_end', 'bk_score', 's_res', 'done', 'home', 'players', 'totals'].indexOf(S.screen) !== -1;
       if (G && !ending) return askExit();
       leave();
     },
@@ -389,23 +431,25 @@
     byround: startRound,
 
     bkstart: bkStart,
-    nextclue: function () { if (G.clue < 5) G.clue++; render(); },
+    nextclue: function () { if (G.clue < 5) { G.clue++; G.turn++; } render(); },
     bkwho: function () { go('bk_who'); },
     bkwin: function (v) {
       var p = players[+v], pts = 6 - G.clue;
       G.scores[p] = (G.scores[p] || 0) + pts;
       G.last = { name: p, pts: pts };
+      addTotal(p, 'bk', pts);
       ping('end_bk');
       go('bk_score');
     },
 
     sstart: sStart,
-    asked: function () { G.n++; if (G.n >= S20_TOTAL) return actions.nobody(); render(); },
+    asked: function () { G.n++; G.turn++; if (G.n >= S20_TOTAL) return actions.nobody(); render(); },
     swho: function () { go('s_who'); },
     swin: function (v) {
       var p = players[+v], pts = s20Points();
       G.scores[p] = (G.scores[p] || 0) + pts;
       G.last = { name: p, pts: pts };
+      addTotal(p, 's20', pts);
       ping('end_s20');
       go('s_res');
     },
@@ -424,7 +468,7 @@
     if (a) a(t.getAttribute('data-v'));
   });
   app.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target && e.target.id === 'pname') actions.addp();
+    if (e.key === 'Enter' && e.target && e.target.id === 'pname') actions.okp();
   });
 
   if ('serviceWorker' in navigator) {
