@@ -25,19 +25,27 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--acc); outli
   padding: max(12px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); }
 
 /* 1 — üst bar */
-.hd { flex: none; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+.hd { flex: none; height: 56px; display: flex; align-items: center; gap: 4px; }
+.hd-r { margin-left: auto; }
+.brand { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 15px; font-weight: 800; color: var(--mut); white-space: nowrap; }
+.brand .logo { width: 28px; height: 28px; border-radius: 8px; }
+.brand.big { font-size: 26px; color: var(--txt); gap: 12px; }
+.brand.big .logo { width: 48px; height: 48px; border-radius: 12px; }
 .back { width: 48px; height: 48px; margin-left: -8px; background: none; border: 0; font-size: 36px; line-height: 1; color: var(--mut); text-align: left; padding: 0 0 4px 8px; }
-.logo { width: 40px; height: 40px; border-radius: 10px; display: block; }
+.logo { display: block; flex: none; }
 .hd-r { font-size: 16px; font-weight: 800; color: var(--mut); }
 
 /* 2 — başlık alanı (yükseklik sabit) */
-.ttl { flex: none; height: 72px; display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; }
+.ttl { flex: none; height: 72px; margin-top: 12px; display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; }
 .ttl h1 { font-size: var(--t-title); line-height: 34px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ttl .sub { font-size: var(--t-sm); line-height: 20px; font-weight: 700; color: var(--mut); height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 3 — içerik: hep üstten başlar, taşarsa kendi içinde kayar */
 .ct { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--gap); padding-bottom: 4px; }
 .ct > * { flex: none; }
+.in { margin: auto 0; display: flex; flex-direction: column; gap: var(--gap); width: 100%; }
+.in.top { margin: 0; }
+.pin { position: sticky; top: 0; z-index: 1; background: var(--bg); padding-bottom: 0; }
 
 /* 4 — alt düğmeler: ana eylem hep en altta, ikincil üstünde */
 .ft { flex: none; display: flex; flex-direction: column; gap: var(--gap); padding-top: var(--gap); }
@@ -104,7 +112,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--acc); outli
 
 /* ana ekran sloganı */
 :root { --pill: #4FD1A5; }
-.ct > .slogan { margin-top: auto; padding-top: 8px; }
+.slogan-wrap { flex: none; padding: 0; }
 .slogan svg { width: 100%; height: auto; display: block; overflow: visible; font-family: inherit; }
 .slogan text { font-weight: 800; font-family: inherit; }
 .sl-t1 { fill: var(--txt); animation: sl-up .45s ease-out both; }
@@ -119,3 +127,49 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--acc); outli
 @keyframes sl-fade { from { opacity: 0; } }
 @keyframes sl-slide { from { stroke-dashoffset: 120; opacity: 0; } 15% { opacity: 1; } to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) { .slogan * { animation: none !important; } }
+
+/* cevap kutusu: altta sabit, tek satır */
+.ct.has-pin { overflow: hidden; }
+.ct.has-pin .mid { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.ct.has-pin .mid > .in { flex: none; }
+.pin { flex: none; position: static; background: none; z-index: auto; }
+.ans-card { height: var(--h); flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px 0 18px; }
+.ans-l { min-width: 0; display: flex; flex-direction: column; }
+.ans-l .lbl { font-size: 12px; line-height: 14px; }
+.ans { font-size: 22px; line-height: 26px; font-weight: 800; color: var(--acc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero .ans { font-size: var(--t-ans); line-height: 40px; color: var(--txt); }
+
+/* 20 Soru sayacı: halka + artı */
+.hero.big { height: auto; padding: 12px 0; gap: 14px; }
+.ring { position: relative; width: 176px; height: 176px; border-radius: 50%; border: 0; padding: 8px; cursor: pointer;
+  background: conic-gradient(var(--acc) calc(var(--p) * 1%), var(--line) 0); }
+.ring:active { transform: scale(.97); }
+.ring:disabled { opacity: .5; cursor: default; }
+.ring-in { width: 100%; height: 100%; border-radius: 50%; background: var(--surf); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.ring .num { font-size: 64px; line-height: 1; font-weight: 800; color: var(--txt); }
+.ring .of { font-size: 18px; font-weight: 800; color: var(--mut); }
+.ring .plus { position: absolute; right: -2px; bottom: -2px; width: 56px; height: 56px; border-radius: 50%; background: var(--txt); color: var(--bg);
+  display: flex; align-items: center; justify-content: center; font-size: 36px; line-height: 1; font-weight: 800; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+
+/* ana ekran: kare oyun kartları */
+.gal { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); width: 100%; }
+.gal .gcard:nth-child(3) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 6px); }
+.gcard { position: relative; aspect-ratio: 1; border-radius: 22px; color: var(--bg); }
+.c-by { background: #8EC5FF; } .c-bk { background: #4FD1A5; } .c-s20 { background: #B8A9FF; }
+.g-main { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: none; color: inherit; border-radius: 22px; padding: 16px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; text-align: left; gap: 2px; }
+.g-main svg { margin-bottom: auto; }
+.g-main:active { transform: scale(.98); }
+.g-name { font-size: 20px; line-height: 24px; font-weight: 800; }
+.g-tag { font-size: 14px; line-height: 18px; font-weight: 700; opacity: .72; }
+.g-i { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(27,46,68,.35); background: transparent; color: var(--bg); font-size: 16px; font-weight: 800; padding: 0; }
+.modal .clue { font-size: var(--t-body); line-height: 1.4; }
+
+/* cevap kutusu: ipucu kartlarından ayrışsın */
+.ans-card { background: rgba(79,209,165,.14); border-color: var(--ok); }
+.ans-card .lbl { color: var(--ok); }
+.ans { color: var(--txt); }
+.hide-btn { color: var(--ok); }
+/* kimse bilemedi: farklı renk */
+.btn.none { background: transparent; border-color: var(--bad); color: var(--bad); }
+.ring .of { font-size: 13px; line-height: 16px; text-align: center; max-width: 100px; }
