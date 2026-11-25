@@ -183,6 +183,7 @@ function backTarget(p){
  if(p==='journey-intro')return 'pace';
  if(p==='invite')return 'journey-intro';
  if(p==='place')return 'level';
+ if(p==='program')return 'home';
  return null;
 }
 const backBtn=p=>backTarget(p)?'<button type="button" class="back-btn" data-action="back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>':'';
@@ -309,7 +310,7 @@ function render(){
 
 /* ---------- Ders ekranı ---------- */
 const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
- onExit:()=>go('home'),
+ onExit:()=>{if(history.state?.yz101&&history.state.page==='lesson')history.back();else go('home');},
  skipResult:()=>true,
  onCompleted:async(task,info)=>{
   await loadState();
