@@ -372,7 +372,7 @@ async function init(){
  client.auth.onAuthStateChange((event,s)=>{session=s;if(event==='SIGNED_OUT'){lessonView.reset();state=null;if(!working){page='home';welcome();}}});
  const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
  if(!session){welcome();return;}
- await loadState();
+ try{await loadState();}catch(e){const {error:ue}=await client.auth.getUser();if(!ue)throw e;await client.auth.signOut({scope:'local'});session=null;state=null;welcome();return;}
  history.replaceState({yz101:true,page:'home'},'',location.pathname);
  page=state.profile?'home':state.placement?.done?'goal':'level';render();
  await raiseGoal().then(()=>render()).catch(()=>{});
