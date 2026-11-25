@@ -137,6 +137,8 @@
   }
   var EYE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   var EYE_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>';
+  function turnIdx() { return G.turn % players.length; }
+  function turnName() { return esc(players[turnIdx()]); }
   function turnRow() {
     return '<div class="turn"><span class="t-l">Tahmin sırası</span><span class="t-n">' + esc(players[G.turn % players.length]) + '</span></div>';
   }
@@ -209,7 +211,7 @@
       var body = rows.length ? rows.map(function (x) {
         return '<div class="card tot"><div class="srow"><span>' + esc(x.n) + '</span><span>' + (x.bk + x.s20) + '</span></div>' +
           '<div class="tsub"><span>Ben Kimim? ' + x.bk + '</span><span>20 Soru ' + x.s20 + '</span></div></div>';
-      }).join('') : '<div class="empty">Henüz puan yok.<br>Ben Kimim? ve 20 Soru\'da kazanılan puanlar burada birikir.</div>';
+      }).join('') : '<div class="empty">Henüz puan yok.</div>';
       return scr({ title: 'Puan tablosu', sub: 'Bu telefonda kazanılanlar', body: body,
         top: rows.length > 0, foot: rows.length ? [btn('Puanları sıfırla', 'askreset', 'none'), btn('Puanları paylaş', 'shareboard', 'pri')] : [] });
     },
@@ -245,7 +247,7 @@
         body += '<div class="card' + (cur ? ' cur' : '') + '"><span class="lbl' + (cur ? ' cur' : '') + '">İpucu ' + (i + 1) + '</span><span class="clue' + (cur ? ' cur' : '') + '">' + esc(it.clues[i]) + '</span></div>';
       }
       return scr({ title: NAMES.bk, sub: it.cat + ' · İpucu ' + G.clue + ' / 5', right: (6 - G.clue) + ' puan', pin: answerBox(it.ans), body: body,
-        foot: [G.clue < 5 ? btn('Sonraki ipucu', 'nextclue', 'out') : btn('Kimse bilemedi', 'nobody', 'none'), btn('Biri bildi', 'bkwho', 'pri')] });
+        foot: [G.clue < 5 ? btn('Sonraki ipucu', 'nextclue', 'out') : btn('Kimse bilemedi', 'nobody', 'none'), btn(turnName() + ' bildi', 'bkwin', 'pri')] });
     },
     bk_who: function () {
       return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + (6 - G.clue) + ' puan', body: nameList('bkwin') });
@@ -261,7 +263,7 @@
     },
     s_ref: function () {
       return scr({ title: NAMES.s20, sub: G.item.cat, pin: answerBox(G.item.ans), body: counter(),
-        foot: [btn('Biri bildi', 'swho', 'pri')] });
+        foot: [btn(turnName() + ' bildi', 'swin', 'pri')] });
     },
     s_who: function () {
       return scr({ title: 'Kim bildi?', sub: 'Bu soru ' + s20Points() + ' puan', body: nameList('swin') });
@@ -436,7 +438,7 @@
     nextclue: function () { if (G.clue < 5) { G.clue++; G.turn++; } render(); },
     bkwho: function () { go('bk_who'); },
     bkwin: function (v) {
-      var p = players[+v], pts = 6 - G.clue;
+      var p = players[v == null ? turnIdx() : +v], pts = 6 - G.clue;
       G.scores[p] = (G.scores[p] || 0) + pts;
       G.last = { name: p, pts: pts };
       addTotal(p, 'bk', pts);
@@ -448,7 +450,7 @@
     asked: function () { G.n++; G.turn++; if (G.n >= S20_TOTAL) return actions.nobody(); render(); },
     swho: function () { go('s_who'); },
     swin: function (v) {
-      var p = players[+v], pts = s20Points();
+      var p = players[v == null ? turnIdx() : +v], pts = s20Points();
       G.scores[p] = (G.scores[p] || 0) + pts;
       G.last = { name: p, pts: pts };
       addTotal(p, 's20', pts);
