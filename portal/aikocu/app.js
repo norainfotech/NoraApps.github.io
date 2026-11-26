@@ -219,12 +219,14 @@ function celebrateScreen(points,first=true,task=null){
  page='celebrate';celebrateFirst=first;document.body.dataset.page='celebrate';
  root.innerHTML=`<section class="flow celebrate"><div class="celebrate-mark" aria-hidden="true">🎉</div><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><div class="reward"><span class="pill big">+${esc(points)} puan</span>${task?gainPills(task):''}</div><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam et</button></div></section>`;
 }
-const SI={mail:'<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',bell:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',phone:'<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',ok:'<path d="m5 12.5 4.5 4.5L19 7.5"/>'};
-const setupItem=(ic,title,desc,done,doneText,action,label)=>`<li class="setup-item${done?' done':''}"><span class="ic"><svg viewBox="0 0 24 24">${SI[done?'ok':ic]}</svg></span><span><strong>${title}</strong><small>${desc}</small></span>${done?`<span class="state">${doneText}</span>`:`<button class="secondary small" data-action="${action}">${label}</button>`}</li>`;
+const pushLabel=()=>!pushSupported()?'Bu tarayıcıda kullanılamıyor':pushOn===true?'Dersin açılınca haber veririm':'Kapalı';
+const installRow=()=>isStandalone()?'':'<button class="setting-row" data-action="install"><span>Ana ekrana ekle<small>Uygulamayı tek dokunuşla aç</small></span></button>';
+const pushRow=()=>`<button class="setting-row" role="switch" aria-checked="${pushOn===true}" data-action="push-toggle"><span>Hatırlatmalar<small>${pushLabel()}</small></span><span class="switch" aria-hidden="true"></span></button>`;
+const saveCard=a=>`<section class="card callout"><h2>İlerlemeni kaydet</h2><button class="primary wide" data-action="${a}">E-posta ekle</button></section>`;
 function programScreen(){
  page='program';document.body.dataset.page='program';
  const anon=state.account?.anonymous;
- root.innerHTML=`<section class="flow"><h1>Programın hazır</h1><ol class="setup-list">${setupItem('mail','İlerlemeni kaydet','Telefon değişse de kaldığın yerden devam et.',!anon,'Kaydedildi','save-email-program','E-posta ekle')}${setupItem('bell','Hatırlatmaları aç','Dersin açılınca haber veririm.',pushOn===true,'Açık','push-on','Aç')}${isStandalone()?'':setupItem('phone','Ana ekrana ekle','Uygulamayı tek dokunuşla aç.',false,'','install','Ekle')}</ol><button class="primary wide" data-action="to-home">Ana sayfaya geç</button></section>`;
+ root.innerHTML=`<section class="flow"><h1>Programın hazır</h1>${anon?saveCard('save-email-program'):''}<section class="settings">${installRow()}${pushRow()}</section><button class="primary wide" data-action="to-home">Ana sayfaya geç</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
@@ -249,12 +251,11 @@ function skillsView(){
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
- const pushText=!pushSupported()?'Bu tarayıcıda kullanılamıyor':pushOn===true?'Dersin açılınca haber veririm':'Kapalı';
  return `<h1>Profilim</h1><section class="profile-head"><button type="button" class="avatar" data-action="choose-mascot" aria-label="Maskot seç" aria-expanded="false" aria-controls="mascot-options">${mascot(avatarId())}</button><div class="profile-identity"><button class="editable-name" data-action="edit-name" aria-label="Kullanıcı adını düzenle" aria-expanded="false" aria-controls="name-editor">${esc(u.username)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button><div class="identity-meta"><span class="pill">${esc(state.points)} puan</span></div></div></section>
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-options" id="mascot-options" hidden>${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div>
- ${anon?`<section class="card callout"><h2>İlerlemeni kaydet</h2><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
- <section class="settings">${isStandalone()?'':'<button class="setting-row" data-action="install"><span>Ana ekrana ekle<small>Uygulamayı tek dokunuşla aç</small></span></button>'}<button class="setting-row" role="switch" aria-checked="${pushOn===true}" data-action="push-toggle"><span>Hatırlatmalar<small>${pushText}</small></span><span class="switch" aria-hidden="true"></span></button>${anon?'':'<button class="setting-row" data-action="logout">Çıkış yap</button>'}</section>
+ ${anon?saveCard('save-email'):''}
+ <section class="settings">${installRow()}${pushRow()}${anon?'':'<button class="setting-row" data-action="logout">Çıkış yap</button>'}</section>
  <nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:apps@norainfotech.com">Yardım</a></nav>`;
 }
 

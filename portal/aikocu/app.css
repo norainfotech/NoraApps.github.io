@@ -81,14 +81,6 @@ body[data-page=welcome] header{display:none}
 .celebrate .pill.big{font-size:18px;padding:10px 16px;background:var(--ok-soft);color:var(--ok)}
 .celebrate .btn-row{margin-top:56px}
 
-.setup-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.setup-item{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.setup-item .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-ink)}
-.setup-item .ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.setup-item strong{display:block;font-size:16px;line-height:1.3}
-.setup-item small{display:block;font-size:13px;color:var(--muted);line-height:1.35;margin-top:2px}
-.setup-item .state{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--ok)}
-.setup-item.done .ic{background:var(--ok-soft);color:var(--ok)}
 .flow>.wide{margin-top:20px}
 
 /* Ana sayfa */
