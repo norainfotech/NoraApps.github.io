@@ -43,7 +43,6 @@ const rows=()=>state?.lessons||[];
 const row=id=>rows().find(x=>x.lesson_id===id);
 const isLocked=r=>!!r?.locked_until&&Date.parse(r.locked_until)>nowMs();
 const titleOf=id=>LESSONS.find(l=>l.id===id)?.title||id;
-const doneCount=()=>rows().filter(r=>r.completed).length;
 function nextLesson(){const r=row(state?.next_lesson);return r&&r.published&&!r.completed?r:null;}
 const firstKey=()=>'aikocu_celebrated_'+(session?.user?.id||'');
 const clock=until=>`<span class="countdown" data-until="${esc(until)}">--:--:--</span>`;
@@ -144,8 +143,8 @@ async function checkPush(){
  }catch{pushOn=null;}
  paintBadge();if(pushOn!==before&&['profile','home'].includes(page)&&!working)render();
 }
-const NAVIC={home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H10v-5.5h4v5.5h3.5a1 1 0 0 0 1-1V10"/>',skills:'<path d="m12 3.2 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.1l-5.4 3 1-6.1-4.4-4.3 6.1-.9L12 3.2Z"/>'};
-const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa'],['skills','Becerilerim'],['profile','Profil']].map(([p,t])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${p==='profile'?`<i class="nav-avatar">${mascot(avatarId())}</i>`+badgeHtml():`<svg class="nav-ic" viewBox="0 0 24 24">${NAVIC[p]}</svg>`}</span>${t}</button>`).join('')}</nav>`;
+const NAVIC={home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H10v-5.5h4v5.5h3.5a1 1 0 0 0 1-1V10"/>',skills:'<path d="M5 20v-5M12 20V9M19 20V4"/>'};
+const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa'],['skills','İlerleme'],['profile','Profil']].map(([p,t])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${p==='profile'?`<i class="nav-avatar">${mascot(avatarId())}</i>`+badgeHtml():`<svg class="nav-ic" viewBox="0 0 24 24">${NAVIC[p]}</svg>`}</span>${t}</button>`).join('')}</nav>`;
 
 /* ---------- E-posta kodu (anonim -> kalıcı hesap) ---------- */
 function codeDialog({title,intro,send,verify,done,dismissible=false}){
@@ -237,16 +236,17 @@ function homeView(){
  else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="sub">Yeni dersler eklenince burada görünür.</p>`;
  return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
- <section class="card ${cls}">${card}</section>
- <button class="link-card" data-page="skills">Tamamladıklarım<span>${doneCount()} ders ›</span></button>`;
+ <div class="home-mascot" aria-hidden="true">${mascot(avatarId())}</div>
+ <section class="card ${cls}">${card}</section>`;
 }
 const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>'};
 function skillsView(){
  const sk=state.skills||[],done=rows().filter(r=>r.completed);
- const gain=r=>(r.gives||[]).map(g=>`${skillName(g.skill)} ${g.level}`).join(' · ');
- return `<h1>Becerilerim</h1>
- <section class="card"><div class="section-head"><h2>Seviyeler</h2></div>${sk.length?`<div class="skill-list">${sk.map(x=>`<span class="pill skill">${skillName(x.skill)} <b>Seviye ${esc(x.level)}</b></span>`).join('')}</div>`:'<p class="empty">İlk dersini tamamlayınca becerilerin burada görünür.</p>'}</section>
- <section class="card"><div class="section-head"><h2>Tamamladıklarım</h2><span>${done.length} ders</span></div>${done.length?`<div class="list-rows">${done.map(r=>`<div class="list-row">${RI.done}<span class="row-t">${esc(titleOf(r.lesson_id))}<small>${gain(r)}</small></span></div>`).join('')}</div>`:'<p class="empty">Henüz tamamlanan ders yok.</p>'}</section>`;
+ return `<h1>İlerleme</h1>
+ <div class="section-head"><h2>Becerilerim</h2><span>${sk.length} beceri</span></div>
+ <section class="card skills-card">${sk.length?`<div class="skill-list">${sk.map(x=>`<span class="pill skill">${skillName(x.skill)} <b>Seviye ${esc(x.level)}</b></span>`).join('')}</div>`:'<p class="empty">İlk dersini tamamlayınca becerilerin burada görünür.</p>'}</section>
+ <div class="section-head"><h2>Tamamladığım dersler</h2><span>${done.length} / ${rows().length}</span></div>
+ <section class="card">${done.length?`<div class="list-rows">${done.map(r=>`<div class="list-row">${RI.done}<span class="row-t">${esc(titleOf(r.lesson_id))}</span></div>`).join('')}</div>`:'<p class="empty">Henüz tamamlanan ders yok.</p>'}</section>`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
@@ -255,7 +255,7 @@ function profileView(){
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-options" id="mascot-options" hidden>${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div>
  ${anon?`<section class="card callout"><h2>İlerlemeni kaydet</h2><p>E-postanı ekle; telefon değişse de kaldığın yerden devam et.</p><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
- <section class="settings">${isStandalone()?'':'<button class="setting-row" data-action="install"><span>Ana ekrana ekle<small>Uygulamayı tek dokunuşla aç</small></span><span aria-hidden="true">›</span></button>'}<button class="setting-row" role="switch" aria-checked="${pushOn===true}" data-action="push-toggle"><span>Hatırlatmalar<small>${pushText}</small></span><span class="switch" aria-hidden="true"></span></button>${anon?'':'<button class="setting-row" data-action="logout">Çıkış yap</button>'}</section>
+ <section class="settings">${isStandalone()?'':'<button class="setting-row" data-action="install"><span>Ana ekrana ekle<small>Uygulamayı tek dokunuşla aç</small></span></button>'}<button class="setting-row" role="switch" aria-checked="${pushOn===true}" data-action="push-toggle"><span>Hatırlatmalar<small>${pushText}</small></span><span class="switch" aria-hidden="true"></span></button>${anon?'':'<button class="setting-row" data-action="logout">Çıkış yap</button>'}</section>
  <nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:apps@norainfotech.com">Yardım</a></nav>`;
 }
 
