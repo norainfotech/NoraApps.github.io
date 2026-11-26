@@ -7,4 +7,4 @@ NoraApps olarak mobil uygulamalar geliştirerek kullanıcılarımıza faydalı v
 
 ## İletişim
 Herhangi bir soru, öneri veya destek için :
-all.apps.nora@gmail.com
+apps@norainfotech.com
