@@ -58,8 +58,8 @@ window.createAIKocuLessonView=function(opts){
    content=`${String(l.concept).split('\n').filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('')}<div class="example"><h3>${esc(l.exampleTitle||'Örnek')}</h3><p style="margin:0">${esc(l.example)}</p></div><p class="warning"><strong>Yaygın hata</strong>${esc(l.pitfall)}</p>`;
    bar=done?'':`<div class="actions"><button id="learned" class="primary" ${locked()?'disabled':''}>Devam et</button></div>`;
   }else if(stage===1){
-   content=`<h2>Uygula</h2><p>${esc(l.task)}</p><p class="hint">${esc(l.practiceGuidance)}</p>${(done||aiOk)&&!d.answer?'':`<label for="response">Yanıtın</label><textarea id="response" minlength="40" maxlength="1600" ${done||aiOk?'readonly':''}>${esc(d.answer||'')}</textarea><div class="field-row"><span class="field-info">Yapay zeka yanıtını değerlendirir.${!done&&!aiOk&&!access.bypass&&access.attempts_remaining!=null?` ${access.attempts_remaining} kontrol hakkın var.`:''}</span><span class="char-count" id="char-count" aria-live="off"></span></div>`}<div id="ai-feedback" aria-live="polite">${d.feedback?feedbackMarkup(d.feedback):aiOk?'<div class="feedback"><strong>Uygulama görevini tamamladın.</strong></div>':''}</div>`;
-   bar=`<div class="actions">${aiOk?`<button id="to-test" class="primary" ${done||locked()?'disabled':''}>Teste geç</button>`:`<button id="ai-check" class="primary" ${locked()?'disabled':''}>Kontrol et</button>`}<aside class="mentor-access"><button id="mentor-open" class="mentor-open" type="button"><span class="mentor-spark" aria-hidden="true">✦</span><span>Koçuna sor<small>PREMIUM</small></span></button></aside></div>`;
+   content=`<h2>Uygula</h2><p>${esc(l.task)}</p><p class="hint">${esc(l.practiceGuidance)}</p>${(done||aiOk)&&!d.answer?'':`<textarea id="response" aria-label="Yanıtın" placeholder="Yanıtın" minlength="40" maxlength="1600" ${done||aiOk?'readonly':''}>${esc(d.answer||'')}</textarea><div class="field-row"><span class="char-count" id="char-count" aria-live="off"></span></div>`}<div id="ai-feedback" aria-live="polite">${d.feedback?feedbackMarkup(d.feedback):aiOk?'<div class="feedback"><strong>Uygulama görevini tamamladın.</strong></div>':''}</div>`;
+   bar=`<div class="actions">${aiOk?`<button id="to-test" class="primary" ${done||locked()?'disabled':''}>Teste geç</button>`:`<button id="ai-check" class="primary" ${locked()||(d.answer||'').trim().length<40?'disabled':''}>Kontrol et${!access.bypass&&access.attempts_remaining!=null?` (${access.attempts_remaining})`:''}</button>`}<aside class="mentor-access"><button id="mentor-open" class="mentor-open" type="button"><span class="mentor-spark" aria-hidden="true">✦</span><span>Koçuna sor<small>PREMIUM</small></span></button></aside></div>`;
   }else{
    const pages=testPages(l,d),n=pages.length,p=Math.min(testPage,n-1),pg=pages[p],last=p===n-1,ok=pageAnswered(l,d,pg);
    const body=pg.num?`<div class="numeric"><label for="numeric">${esc(l.numericExercise.prompt)}</label><input id="numeric" type="number" step="any" inputmode="decimal" value="${esc(d.numeric||'')}" ${done?'disabled':''}></div>`:`<fieldset class="question" data-q="${pg.q}"><legend>${esc(l.questions[pg.q].prompt)}</legend>${l.questions[pg.q].options.map((o,j)=>`<label class="choice"><input type="radio" name="q${pg.q}" value="${j}" ${String(d.answers?.[pg.q])===String(j)?'checked':''} ${done?'disabled':''}><span>${esc(o)}</span></label>`).join('')}</fieldset>`;
@@ -74,7 +74,7 @@ window.createAIKocuLessonView=function(opts){
   if($('#learned'))$('#learned').onclick=()=>goStage(aiOk?2:1);
   if($('#to-test'))$('#to-test').onclick=()=>goStage(2);
   if($('#ai-check'))$('#ai-check').onclick=()=>checkAnswer();
-  if($('#response')){const c=()=>{const n=$('#response').value.length;$('#char-count').textContent=n<40?`${n} / 1600 · en az 40`:`${n} / 1600`;$('#char-count').classList.toggle('low',n<40);};$('#response').addEventListener('input',c);c();}
+  if($('#response')){const c=()=>{const n=$('#response').value.length;$('#char-count').textContent=n<40?`${n}/40`:n>1400?`${n}/1600`:'';const b=$('#ai-check');if(b&&!locked())b.disabled=$('#response').value.trim().length<40;};$('#response').addEventListener('input',c);c();}
   if($('#quiz-form')){
    const f=$('#quiz-form'),go=k=>{keepDraft();testPage=Math.max(0,testPage+k);renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});};
    f.onsubmit=submitTest;
@@ -95,7 +95,7 @@ window.createAIKocuLessonView=function(opts){
  async function checkAnswer(confirmed){
   if(busy||locked())return;keepDraft();
   const l=lessonOf(),owner=user?.id,answer=(drafts[l.id]?.answer||'').trim();
-  if(answer.length<40||answer.length>1600){$('#ai-feedback').textContent='Yanıtın 40–1600 karakter arasında olmalı.';return;}
+  if(answer.length<40||answer.length>1600){$('#ai-feedback').textContent='En az 40 karakter yaz.';return;}
   if(!confirmed&&!access.bypass&&access.attempts_remaining===1){modal('Bu son kontrol hakkın',`<p>Yanıtın yeterli bulunmazsa tekrar denemek için 24 saat beklemen gerekir.</p><p class="field-info">Göndermeden önce bak: ${esc(l.practiceGuidance||'Yanıtın görevi karşılıyor mu?')} Yanıtın görevde istenen her şeyi içeriyor mu?</p>`,'Kontrol et',()=>checkAnswer(true),{secondary:'Yanıtı düzenle',onlyPrimary:true,tone:'info'});return;}
   setBusy(true);$('#ai-feedback').textContent='Kontrol ediliyor…';let message='',fresh=null,status='';
   try{
@@ -115,7 +115,7 @@ window.createAIKocuLessonView=function(opts){
      const fb=`<p>${esc(fresh.feedback)}</p>`;
      if(fresh.passed)modal('Uygulama görevini tamamladın.',fb,'Teste geç',async()=>{try{await opts.gate?.('after-ai');}catch{return;}goStage(2);},{tone:'success'});
      else if(locked())modal('Henüz olmadı',fb+'<p>Kontrol hakkın bitti.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
-     else modal('Henüz olmadı',fb+(access.bypass?'':'<p class="field-info">Bir kontrol hakkın daha var.</p>'),'Yanıtı düzenle',null,{tone:'error'});
+     else modal('Henüz olmadı',fb,'Yanıtı düzenle',null,{tone:'error'});
     }else if(locked()){modal('Henüz olmadı',(timerMarkup()||'<p>Bu ders 24 saat sonra yeniden açılır.</p>'),'Tamam',showHome,{tone:'error'});}
    }
   }

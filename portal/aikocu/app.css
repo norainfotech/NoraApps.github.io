@@ -51,7 +51,7 @@ label{font-size:14px;font-weight:650}
 /* Karşılama */
 .welcome{min-height:calc(100dvh - 44px);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-bottom:110px}
 .welcome-mark img{width:84px;height:84px;display:block;margin:0 auto 22px}
-.welcome h1{font-size:32px;margin-bottom:48px}
+.welcome h1{font-size:32px;margin-bottom:96px}
 .welcome .btn-row{width:100%;max-width:400px;margin-top:0}
 body[data-page=welcome] header{display:none}
 
@@ -104,7 +104,9 @@ body[data-page=welcome] header{display:none}
 .big-count{font-size:40px;line-height:1.1;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;color:var(--ink);margin:0 0 4px}
 .coach-card .sub{font-size:14px;color:var(--muted);margin:6px 0 0}
 .coach-card button.text{margin-top:6px}
-body:has(.bottom-nav) main>.coach-card{margin:auto 0}
+body:has(.bottom-nav) main>.coach-card{margin:auto 0;position:relative;top:-38px}
+body:has(.coach-card) .bottom-nav{margin-top:0}
+.coach-card .btn-row{margin-top:32px}
 
 /* Beceriler */
 .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 0 8px}
@@ -247,7 +249,7 @@ body:has(.bottom-nav) main>*{flex:none}
 .hint{font-size:14px;color:var(--muted);margin:-4px 0 14px}
 #response{min-height:150px;resize:vertical;margin-bottom:6px;line-height:1.5}
 #response[readonly]{background:#FBF6EC}
-.field-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:0 0 4px}
+.field-row{display:flex;justify-content:flex-end;align-items:flex-start;gap:12px;margin:0 0 4px;min-height:20px}
 .field-info{font-size:13px;color:var(--muted);margin:0;line-height:1.4}
 .char-count{flex:none;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .char-count.low{color:var(--bad)}
