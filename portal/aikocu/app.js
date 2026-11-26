@@ -235,8 +235,7 @@ function homeView(){
  else if(limited){cls+=' center';card=`<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row">${n?`<button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button>`:''}<button class="primary" data-action="premium-info">Premium'a geç</button></div>${remind}`;}
  else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="sub">Yeni dersler eklenince burada görünür.</p>`;
- return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
- <div class="home-mascot" aria-hidden="true">${mascot(avatarId())}</div>
+ return `<section class="today-head"><span class="mini-avatar" aria-hidden="true">${mascot(avatarId())}</span><h1><small>Merhaba,</small>${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
  <section class="card ${cls}">${card}</section>`;
 }
 const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>'};

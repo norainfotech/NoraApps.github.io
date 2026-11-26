@@ -93,6 +93,9 @@ body[data-page=welcome] header{display:none}
 /* Ana sayfa */
 .today-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px}
 .today-head h1{font-size:24px;margin:0;min-width:0;overflow-wrap:anywhere}
+.today-head h1 small{display:block;font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted);line-height:1.2}
+.mini-avatar{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#FAF0DE;border:2px solid #EBD3A8}
+.mini-avatar svg{width:84%;height:84%}
 .coach-card{background:var(--brand-soft);border-color:var(--brand-line)}
 .coach-card h2{font-size:24px;margin-bottom:0}
 .coach-card.center{text-align:center}
@@ -100,10 +103,7 @@ body[data-page=welcome] header{display:none}
 .big-count{font-size:40px;line-height:1.1;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;color:var(--ink);margin:0 0 4px}
 .coach-card .sub{font-size:14px;color:var(--muted);margin:6px 0 0}
 .coach-card button.text{margin-top:6px}
-body:has(.bottom-nav) main>.home-mascot{margin:auto 0 16px;display:grid;place-items:center}
-body:has(.bottom-nav) main>.coach-card{margin-bottom:auto}
-.home-mascot svg{width:min(34vw,130px);height:auto}
-@media (max-height:680px){body:has(.bottom-nav) main>.home-mascot{display:none}body:has(.bottom-nav) main>.coach-card{margin-top:auto}}
+body:has(.bottom-nav) main>.coach-card{margin:auto 0}
 
 /* Beceriler */
 .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 0 8px}
@@ -322,6 +322,6 @@ body:has(.bottom-nav) main>*{flex:none}
 }
 .btn-row>button,.dialog-actions>button{padding-left:10px;padding-right:10px}
 .coach-card button.secondary{background:#fff}
-.today-head h1{font-size:22px}
+.today-head h1{font-size:21px;line-height:1.2;flex:1}
 .step-hint{margin:-6px 0 12px;padding:10px 14px;border-radius:12px;background:var(--brand-soft);color:var(--brand-ink);font-size:14px;font-weight:600}
 .loading{text-align:center;color:var(--muted);margin-top:30vh}
