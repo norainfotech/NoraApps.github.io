@@ -2,6 +2,7 @@ const root=document.querySelector('#app');
 try{const o='nora-yz101-auth',n='nora-aikocu-auth';const v=localStorage.getItem(o);if(v&&!localStorage.getItem(n))localStorage.setItem(n,v);localStorage.removeItem(o);}catch{}
 const client=window.supabase?.createClient('https://gjztdlihsfmozxcgdwke.supabase.co','sb_publishable_tDQAKMpHaorQAplXqg5Nqg_zwOImZeT',{auth:{storageKey:'nora-aikocu-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const skillName=v=>{const t=String(v??'');return esc(t.charAt(0).toLocaleUpperCase('tr')+t.slice(1));};
 let session=null,state=null,page='home',serverOffset=0,countdownTimer=null,working=false;
 function notify(message){showResultDialog('Bilgilendirme',message,'Tamam');}
 function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
@@ -205,7 +206,7 @@ function paceScreen(){
  root.innerHTML=`<section class="flow"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="lead">Ücretsiz başla. Hızlanmak istersen Premium’a geçersin.</p><div class="option-list"><button class="option-card main" data-action="pace-free"><b>Hafif mod</b><small>Günde 1 ders · Ücretsiz</small><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button><button class="option-card" data-action="pace-premium"><b>Hızlı mod</b><small>Sınırsız ders · Premium</small><span class="pill">Yakında</span></button></div></section>`;
 }
 const lessonOf=id=>LESSONS.find(l=>l.id===id)||{};
-const gainPills=id=>(row(id)?.gives||[]).map(g=>`<span class="pill skill">${esc(g.skill)} <b>Seviye ${esc(g.level)}</b></span>`).join('');
+const gainPills=id=>(row(id)?.gives||[]).map(g=>`<span class="pill skill">${skillName(g.skill)} <b>Seviye ${esc(g.level)}</b></span>`).join('');
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="flow"><h1>Dersler hazırlanıyor.</h1><p class="lead">Yeni dersler eklenince burada görünür.</p><button class="primary wide" data-action="to-home">Devam et</button></section>`;return;}
@@ -242,9 +243,9 @@ function homeView(){
 const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>'};
 function skillsView(){
  const sk=state.skills||[],done=rows().filter(r=>r.completed);
- const gain=r=>(r.gives||[]).map(g=>`${esc(g.skill)} ${g.level}`).join(' · ');
+ const gain=r=>(r.gives||[]).map(g=>`${skillName(g.skill)} ${g.level}`).join(' · ');
  return `<h1>Becerilerim</h1>
- <section class="card"><div class="section-head"><h2>Seviyeler</h2></div>${sk.length?`<div class="skill-list">${sk.map(x=>`<span class="pill skill">${esc(x.skill)} <b>Seviye ${esc(x.level)}</b></span>`).join('')}</div>`:'<p class="empty">İlk dersini tamamlayınca becerilerin burada görünür.</p>'}</section>
+ <section class="card"><div class="section-head"><h2>Seviyeler</h2></div>${sk.length?`<div class="skill-list">${sk.map(x=>`<span class="pill skill">${skillName(x.skill)} <b>Seviye ${esc(x.level)}</b></span>`).join('')}</div>`:'<p class="empty">İlk dersini tamamlayınca becerilerin burada görünür.</p>'}</section>
  <section class="card"><div class="section-head"><h2>Tamamladıklarım</h2><span>${done.length} ders</span></div>${done.length?`<div class="list-rows">${done.map(r=>`<div class="list-row">${RI.done}<span class="row-t">${esc(titleOf(r.lesson_id))}<small>${gain(r)}</small></span></div>`).join('')}</div>`:'<p class="empty">Henüz tamamlanan ders yok.</p>'}</section>`;
 }
 function profileView(){
