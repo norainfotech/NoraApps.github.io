@@ -2,11 +2,13 @@ import { GRADER_SYSTEM } from './policy.mjs';
 // AI Koçu controlled AI grading endpoint. Tasks disabled until rubric QA and secret configuration.
 const base=Deno.env.get("SUPABASE_URL")!;
 const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const cors={"Access-Control-Allow-Origin":"https://noraapps.web.app","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin"};
-const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store",...cors}});
+const origins=["https://aikocu.norainfotech.com","https://noraapps.web.app","https://yz101app.web.app"];
+const corsFor=(req:Request)=>{const o=req.headers.get("Origin")||"";return {"Access-Control-Allow-Origin":origins.includes(o)?o:origins[0],"Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin"}};
 const hash=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,"0")).join("");
 async function control(action:string,data:Record<string,unknown>){const r=await fetch(base+"/rest/v1/rpc/aikocu_practice_control",{method:"POST",headers:{"apikey":service,"Authorization":"Bearer "+service,"Content-Type":"application/json"},body:JSON.stringify({p_action:action,...data})});if(!r.ok)throw Error("Control failed "+r.status);return r.json()}
 Deno.serve(async req=>{
+ const cors=corsFor(req);
+ const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store",...cors}});
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  if(req.method!=="POST")return reply({error:"POST required"},405);
  try{

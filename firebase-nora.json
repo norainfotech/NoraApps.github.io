@@ -6,26 +6,25 @@
       "ignore": [
         "**/.*"
       ],
-      "headers": [
-        {
-          "source": "/aikocu/**",
-          "headers": [
-            {
-              "key": "Cache-Control",
-              "value": "no-cache"
-            }
-          ]
-        }
-      ],
       "redirects": [
         {
           "source": "/yz101/**",
-          "destination": "/aikocu/",
+          "destination": "https://aikocu.norainfotech.com/",
           "type": 301
         },
         {
           "source": "/yz101",
-          "destination": "/aikocu/",
+          "destination": "https://aikocu.norainfotech.com/",
+          "type": 301
+        },
+        {
+          "source": "/aikocu/**",
+          "destination": "https://aikocu.norainfotech.com/",
+          "type": 301
+        },
+        {
+          "source": "/aikocu",
+          "destination": "https://aikocu.norainfotech.com/",
           "type": 301
         }
       ]

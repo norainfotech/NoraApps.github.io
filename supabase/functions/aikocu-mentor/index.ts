@@ -1,14 +1,16 @@
 import { synthesizeWaveNet } from '../_shared/wavenet.mjs';
 import { MENTOR_SYSTEM, validExplanation, parseMentorInput, plainExplanation } from './policy.mjs';
 const base=Deno.env.get('SUPABASE_URL')!,service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const headers={'Access-Control-Allow-Origin':'https://noraapps.web.app','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'};
-const reply=(data:unknown,status=200)=>Response.json(data,{status,headers});
+const origins=['https://aikocu.norainfotech.com','https://noraapps.web.app','https://yz101app.web.app'];
+const headersFor=(req:Request)=>{const o=req.headers.get('Origin')||'';return {'Access-Control-Allow-Origin':origins.includes(o)?o:origins[0],'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'}};
 async function control(action:string,user:string,data:Record<string,unknown>={}){
  const r=await fetch(base+'/rest/v1/rpc/aikocu_mentor_control',{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:action,p_user:user,...data})});
  if(!r.ok)throw Error('control_failed');return await r.json();
 }
 const hash=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 Deno.serve(async req=>{
+ const headers=headersFor(req);
+ const reply=(data:unknown,status=200)=>Response.json(data,{status,headers});
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(req.method!=='POST')return reply({error:'method_not_allowed'},405);
  try{
