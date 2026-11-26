@@ -249,3 +249,5 @@ body:has(.bottom-nav) main>.bottom-nav{margin-top:auto}
 body:has(.bottom-nav) header,body[data-page] header{width:100%;justify-content:flex-start}
 
 .skill-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.pill.skill{padding:6px 12px;border-radius:999px;font-size:14px}.pill.skill b{font-weight:700}.list-rows .settings-row .row-t small{display:block;font-size:13px}
+
+.result-notes{display:grid;gap:10px;margin:14px 0 4px;text-align:left}.result-note{background:#f5f9fc;border:1px solid #dcebf5;border-radius:12px;padding:10px 12px}.result-note strong{display:block;font-size:13px;color:#153951;margin-bottom:2px}.result-note p{margin:0;font-size:14px;line-height:1.45;color:#153951}.result-note small{display:block;margin-top:4px;font-size:12.5px;line-height:1.4;color:#587187}

@@ -200,7 +200,7 @@ function profileView(){
  ${pushOn===false?`<section class="card install-card"><strong>Hatırlatmalar</strong><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
  <section class="settings">
- <a class="settings-link" href="bildirimler.html">Hatırlatmalar <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap</button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
+ <a class="settings-link" href="bildirimler.html">Hatırlatmalar <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap</button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:apps@norainfotech.com">Yardım</a></nav>`;
 }
 
 /* ---------- Çizim ---------- */

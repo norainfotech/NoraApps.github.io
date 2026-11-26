@@ -48,7 +48,8 @@ window.createAIKocuLessonView=function(opts){
  }
  function goStage(n){if(busy)return;keepDraft();stage=n;testPage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});}
  function feedbackMarkup(f){return `<div class="feedback ${f.passed?'':'error'}"><strong>${f.passed?'Yeterli':'Henüz olmadı'}</strong><p>${esc(f.feedback)}</p></div>`;}
- function rowsMarkup(flags,numeric,l){return flags.map((ok,i)=>`<div class="result-row"><span>${i+1}. soru</span><strong class="${ok?'pass':'fail'}">${ok?'Doğru':'Yanlış'}</strong></div>`).join('')+(l.numericExercise&&numeric!=null?`<div class="result-row"><span>Sayısal uygulama</span><strong class="${numeric?'pass':'fail'}">${numeric?'Doğru':'Yanlış'}</strong></div>`:'');}
+ function notesMarkup(notes){return Array.isArray(notes)&&notes.length?`<div class="result-notes">${notes.map(n=>`<div class="result-note"><strong>${Number(n.q)}. soru</strong>${n.why?`<p>${esc(n.why)}</p>`:''}${n.hint?`<small>İpucu: ${esc(n.hint)}</small>`:''}</div>`).join('')}</div>`:'';}
+ function rowsMarkup(flags,numeric,l,notes){return flags.map((ok,i)=>`<div class="result-row"><span>${i+1}. soru</span><strong class="${ok?'pass':'fail'}">${ok?'Doğru':'Yanlış'}</strong></div>`).join('')+(l.numericExercise&&numeric!=null?`<div class="result-row"><span>Sayısal uygulama</span><strong class="${numeric?'pass':'fail'}">${numeric?'Doğru':'Yanlış'}</strong></div>`:'')+notesMarkup(notes);}
 
  function renderLesson(){
   const l=lessonOf(),d=drafts[l.id]||{},done=info.completed,aiOk=info.practice_passed;let content='';
@@ -136,7 +137,7 @@ window.createAIKocuLessonView=function(opts){
    await loadState();setBusy(false);renderLesson();
    if(data.status==='evaluated'){
     d.request=null;d.retry=null;
-    const rows=rowsMarkup(data.answers,data.numeric_passed,l);
+    const rows=rowsMarkup(data.answers,data.numeric_passed,l,data.passed?null:data.notes);
     if(data.passed){
      const finish=async()=>{try{await opts.gate?.('after-test');}catch{return;}opts.onCompleted?.(l.id,{points,via:testout?'test':'lesson'});};
      if(opts.skipResult?.())finish();else modal('Dersi tamamladın',`<p class="lesson-reward">+${points} puan</p>`+rows,'Devam et',finish,{tone:'success'});
