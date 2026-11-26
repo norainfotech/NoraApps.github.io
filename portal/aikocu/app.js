@@ -1,10 +1,8 @@
 const root=document.querySelector('#app');
-const client=window.supabase?.createClient('https://gjztdlihsfmozxcgdwke.supabase.co','sb_publishable_tDQAKMpHaorQAplXqg5Nqg_zwOImZeT',{auth:{storageKey:'nora-yz101-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+try{const o='nora-yz101-auth',n='nora-aikocu-auth';const v=localStorage.getItem(o);if(v&&!localStorage.getItem(n))localStorage.setItem(n,v);localStorage.removeItem(o);}catch{}
+const client=window.supabase?.createClient('https://gjztdlihsfmozxcgdwke.supabase.co','sb_publishable_tDQAKMpHaorQAplXqg5Nqg_zwOImZeT',{auth:{storageKey:'nora-aikocu-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let session=null,state=null,page='home',serverOffset=0,countdownTimer=null,working=false;
-const goals=['Anlamak','Kullanmak','Üretmek'];
-const goalInfo={Anlamak:'Yapay zekanın ne olduğunu ve nasıl çalıştığını anla.',Kullanmak:'Günlük işlerinde yapay zekayı kullan.',Üretmek:'Yapay zekayla içerik, otomasyon ve ürün üret.'};
-const PER_DAY=2;
 function notify(message){showResultDialog('Bilgilendirme',message,'Tamam');}
 function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  document.querySelector('#app-dialog')?.remove();
@@ -15,40 +13,37 @@ function showResultDialog(title,message,buttonLabel='Tamam',tone='info'){
  d.querySelector('button').addEventListener('click',close);
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
-function premiumInfo(){showResultDialog('Premium','Premium çok yakında. Açıldığında sınırsız ders yapabilirsin. Şimdilik her gün 2 ders ücretsiz.','Tamam');}
+function premiumInfo(){showResultDialog('Premium','Premium çok yakında. Açıldığında sınırsız ders yapabilir, beklemeden ilerleyebilir ve Koçuna sor\'u kullanabilirsin. Şimdilik her gün 1 ders ücretsiz.','Tamam');}
 function limitDialog(){
  const a=state?.access||{};const limit=a.daily_reached&&!a.premium&&!a.bypass;const nx=limit?null:nextLesson();
  document.querySelector('#app-dialog')?.remove();
  const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog';d.dataset.tone='info';
- d.innerHTML=limit?'<h2>Bugünkü derslerini tamamladın</h2><p class="big-count" data-until="'+esc(a.daily_unlock_at||'')+'">--:--:--</p><button class="primary wide" type="button" data-x="premium">Premium\'a geç</button>':'<h2>Önce sıradaki dersi tamamla</h2>'+(nx?'<button class="primary wide" type="button" data-x="go">Derse git</button>':'');
+ d.innerHTML=limit?'<h2>Bugünkü dersini tamamladın</h2><p class="big-count" data-until="'+esc(a.daily_unlock_at||'')+'">--:--:--</p><button class="primary wide" type="button" data-x="premium">Premium\'a geç</button>':'<h2>Önce sıradaki dersi tamamla</h2>'+(nx?'<button class="primary wide" type="button" data-x="go">Derse git</button>':'');
  document.body.append(d);d.showModal();
  let timer=null;const close=()=>{clearInterval(timer);d.close();d.remove();};
  const cd=d.querySelector('.big-count');
- if(cd){const tick=()=>{if(!cd.dataset.until){cd.textContent='24:00:00';return;}const s=Math.max(0,Math.ceil((Date.parse(cd.dataset.until)-nowMs())/1000));cd.textContent=[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');if(s===0){close();loadState().then(()=>{if(['home','journey'].includes(page))render();}).catch(()=>{});}};tick();timer=setInterval(tick,1000);}
- d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;const r=d.getBoundingClientRect();const outside=e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;if(!x&&!outside)return;close();if(x==='premium')premiumInfo();if(x==='go'&&nx)openLesson(nx.task_id,'lesson');});
+ if(cd){const tick=()=>{if(!cd.dataset.until){cd.textContent='24:00:00';return;}const s=Math.max(0,Math.ceil((Date.parse(cd.dataset.until)-nowMs())/1000));cd.textContent=[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');if(s===0){close();loadState().then(()=>{if(['home','skills'].includes(page))render();}).catch(()=>{});}};tick();timer=setInterval(tick,1000);}
+ d.addEventListener('click',e=>{const x=e.target.closest('button')?.dataset.x;const r=d.getBoundingClientRect();const outside=e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;if(!x&&!outside)return;close();if(x==='premium')premiumInfo();if(x==='go'&&nx)openLesson(nx.lesson_id,'lesson');});
  d.addEventListener('cancel',e=>{e.preventDefault();close();});
 }
-document.addEventListener('yz101:limit',()=>{loadState().catch(()=>{}).finally(()=>limitDialog());});
-document.addEventListener('yz101:premium',()=>premiumInfo());
+document.addEventListener('aikocu:limit',()=>{loadState().catch(()=>{}).finally(()=>limitDialog());});
+document.addEventListener('aikocu:premium',()=>premiumInfo());
 let wakeLock=null;
 async function wakeOn(){try{if(!('wakeLock' in navigator)||wakeLock)return;wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}catch{}}
 function wakeOff(){try{wakeLock?.release();}catch{}wakeLock=null;}
 function failure(e){if(e?.cancelled)return;let message=e?.message||'Olmadı. Tekrar dene.';if(/invalid login credentials/i.test(message))message='E-posta veya şifre hatalı.';if(/email not confirmed/i.test(message))message='Önce e-postana gelen kodu gir.';if(/already registered|user_already_exists/i.test(message))message='Bu e-posta kayıtlı. Şifreni hatırlamıyorsan "Şifremi unuttum" de.';if(/unique|duplicate key/i.test(message))message='Bu kullanıcı adı kullanılıyor. Başka bir ad seç.';if(/fetch|network/i.test(message))message='Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';notify(message);}
 async function detachPush(){try{if(!('serviceWorker' in navigator))return;const r=await navigator.serviceWorker.getRegistration();const s=await r?.pushManager.getSubscription();if(s){await client.rpc('nora_push',{p_action:'remove_device',p_data:{endpoint:s.endpoint}});await s.unsubscribe();}}catch{}}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function coach(action,data={}){const {data:r,error}=await client.rpc('yz101_coach',{p_action:action,p_data:data});if(error)throw error;return r;}
-async function loadState(){state=await coach('state');serverOffset=Date.parse(state.server_now)-Date.now();return state;}
+async function api(action,data={}){const {data:r,error}=await client.rpc('aikocu_api',{p_action:action,p_data:data});if(error)throw error;return r;}
+async function loadState(){state=await api('state');serverOffset=Date.parse(state.server_now)-Date.now();return state;}
 const nowMs=()=>Date.now()+serverOffset;
 const rows=()=>state?.lessons||[];
-const row=id=>rows().find(x=>x.task_id===id);
+const row=id=>rows().find(x=>x.lesson_id===id);
 const isLocked=r=>!!r?.locked_until&&Date.parse(r.locked_until)>nowMs();
-const titleOf=id=>COURSE.find(c=>c.id===id)?.title||id;
-const goalCount=()=>GOAL_TOTAL[state?.profile?.goal]||10;
+const titleOf=id=>LESSONS.find(l=>l.id===id)?.title||id;
 const doneCount=()=>rows().filter(r=>r.completed).length;
-function nextLesson(){const open=rows().filter(r=>r.published&&!r.completed);return open.find(r=>!isLocked(r)&&!r.listed)||open.find(r=>!isLocked(r))||null;}
-function nextLocked(){return rows().filter(r=>r.published&&!r.completed&&isLocked(r)).sort((a,b)=>Date.parse(a.locked_until)-Date.parse(b.locked_until))[0]||null;}
-function daysLeft(){const left=Math.max(0,goalCount()-Math.min(doneCount(),goalCount()));return Math.max(1,Math.ceil(left/PER_DAY));}
-const firstKey=()=>'yz101_celebrated_'+(session?.user?.id||'');
+function nextLesson(){const r=row(state?.next_lesson);return r&&r.published&&!r.completed?r:null;}
+const firstKey=()=>'aikocu_celebrated_'+(session?.user?.id||'');
 const clock=until=>`<span class="countdown" data-until="${esc(until)}">--:--:--</span>`;
 let deferredInstall=null;
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -60,30 +55,29 @@ function installBody(cls='primary wide'){
 }
 function installCard(dismissible){
  if(isStandalone())return '';
- try{if(dismissible&&localStorage.getItem('yz101_install_off'))return '';}catch{}
+ try{if(dismissible&&localStorage.getItem('aikocu_install_off'))return '';}catch{}
  const close=dismissible?'<button type="button" class="text install-close" data-action="install-off" aria-label="Kapat">Şimdi değil</button>':'';
  return '<section class="card install-card" id="install-card"><strong>Ana ekrana ekle</strong><p class="muted">Hatırlatmaların için uygulamayı ana ekrana ekle.</p>'+installBody()+close+'</section>';
 }
 const mascots={fox:{name:'Tilki',color:'#f3b579'},owl:{name:'Baykuş',color:'#b3a1db'},cat:{name:'Kedi',color:'#e4b5cf'},panda:{name:'Panda',color:'#b4d7c5'}};
-function avatarId(){const id=session?.user?.user_metadata?.yz101_mascot;return mascots[id]?id:'fox';}
+function avatarId(){const id=session?.user?.user_metadata?.aikocu_mascot;return mascots[id]?id:'fox';}
 function mascot(id){if(!mascots[id])id='fox';const m=mascots[id];let ears=id==='panda'?'<circle cx="17" cy="20" r="8" fill="#5E4A32"/><circle cx="47" cy="20" r="8" fill="#5E4A32"/>':'<path d="M14 28L12 11L29 22M50 28L52 11L35 22" fill="'+m.color+'"/>';
 return `<svg viewBox="0 0 64 64" role="img" aria-label="${m.name}" xmlns="http://www.w3.org/2000/svg"><g stroke="#4F3E2A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ears}<rect x="12" y="19" width="40" height="35" rx="18" fill="${m.color}"/>${id==='owl'?'<circle cx="24" cy="34" r="10" fill="#fff"/><circle cx="40" cy="34" r="10" fill="#fff"/>':''}${id==='panda'?'<ellipse cx="24" cy="34" rx="7" ry="9" fill="#5E4A32"/><ellipse cx="40" cy="34" rx="7" ry="9" fill="#5E4A32"/>':''}<circle cx="24" cy="34" r="3" fill="${id==='panda'?'#fff':'#4F3E2A'}" stroke="none"/><circle cx="40" cy="34" r="3" fill="${id==='panda'?'#fff':'#4F3E2A'}" stroke="none"/><path d="M26 44Q32 49 38 44" fill="none"/>${id==='fox'||id==='cat'?'<path d="M29 39L32 41L35 39"/>':''}</g></svg>`;}
 
 /* ---------- Gezinme ---------- */
-const mainPages=['home','journey','profile'];
+const mainPages=['home','skills','profile'];
 let restoring=false;
-const tunnelPages=['level','goal','pace','journey-intro','invite','place'];
-function pushStep(){if(restoring||!tunnelPages.includes(page))return;const s={yz101:true,page},st=history.state;if(st?.yz101&&tunnelPages.includes(st.page))history.replaceState(s,'',location.pathname);else history.pushState(s,'',location.pathname);}
+const tunnelPages=['pace','invite'];
+function pushStep(){if(restoring||!tunnelPages.includes(page))return;const s={aikocu:true,page},st=history.state;if(st?.aikocu&&tunnelPages.includes(st.page))history.replaceState(s,'',location.pathname);else history.pushState(s,'',location.pathname);}
 function go(p,opts={}){
  lessonView.keepDraft();page=p;
- if(!restoring&&opts.push!==false)history.pushState({yz101:true,page:p},'',location.pathname);
+ if(!restoring&&opts.push!==false)history.pushState({aikocu:true,page:p},'',location.pathname);
  render();window.scrollTo({top:0,left:0,behavior:'instant'});
 }
 window.addEventListener('popstate',e=>{
- if(session&&tunnelPages.includes(page)){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
- if(e.state?.yz101&&tunnelPages.includes(e.state.page)){history.back();return;}
+ if(session&&tunnelPages.includes(page)){history.pushState({aikocu:true,page},'',location.pathname);return;}
  if(!session||!state?.profile||lessonView.busy())return;lessonView.keepDraft();
- const p=e.state?.yz101?e.state.page:'home';page=mainPages.includes(p)?p:'home';
+ const p=e.state?.aikocu?e.state.page:'home';page=mainPages.includes(p)?p:'home';
  restoring=true;render();restoring=false;window.scrollTo(0,0);
 });
 let pushOn=null;
@@ -99,8 +93,8 @@ async function checkPush(){
  }catch{pushOn=null;}
  paintBadge();if(page==='profile')render();
 }
-const NAVIC={home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H10v-5.5h4v5.5h3.5a1 1 0 0 0 1-1V10"/>',journey:'<path d="M12 6.5C10.4 5 8 4.4 4 4.4v14c4 0 6.4.6 8 2.1 1.6-1.5 4-2.1 8-2.1v-14c-4 0-6.4.6-8 2.1Z"/><path d="M12 6.5v14"/>'};
-const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa'],['journey','Dersler'],['profile','Profil']].map(([p,t])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${p==='profile'?`<i class="nav-avatar">${mascot(avatarId())}</i>`+badgeHtml():`<svg class="nav-ic" viewBox="0 0 24 24">${NAVIC[p]}</svg>`}</span>${t}</button>`).join('')}</nav>`;
+const NAVIC={home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H10v-5.5h4v5.5h3.5a1 1 0 0 0 1-1V10"/>',skills:'<path d="m12 3.2 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.1l-5.4 3 1-6.1-4.4-4.3 6.1-.9L12 3.2Z"/>'};
+const nav=()=>`<nav class="bottom-nav" aria-label="Ana menü">${[['home','Ana sayfa'],['skills','Becerilerim'],['profile','Profil']].map(([p,t])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}><span aria-hidden="true">${p==='profile'?`<i class="nav-avatar">${mascot(avatarId())}</i>`+badgeHtml():`<svg class="nav-ic" viewBox="0 0 24 24">${NAVIC[p]}</svg>`}</span>${t}</button>`).join('')}</nav>`;
 
 /* ---------- E-posta kodu (anonim -> kalıcı hesap) ---------- */
 function codeDialog({title,intro,send,verify,done,dismissible=false}){
@@ -143,115 +137,27 @@ function welcome(){
  root.innerHTML=`<section class="auth welcome"><span class="welcome-mark"><img src="app-icon.svg" alt="" width="80" height="80"></span><h1>Yapay zekayı<br>koçunla öğren.</h1><div class="btn-row"><button class="secondary" data-action="login">Hesabım var</button><button class="primary" data-action="start">Başla</button></div></section>`;
 }
 async function startAnonymous(){
- if(!session){const {data,error}=await client.auth.signInAnonymously({options:{data:{origin_app:'yz101'}}});if(error)throw error;session=data.session;}
- await loadState();tun={goal:null};page=state.profile?'home':state.placement?.done?'goal':'level';
- state.profile?go('home'):render();
+ if(!session){const {data,error}=await client.auth.signInAnonymously({options:{data:{origin_app:'aikocu'}}});if(error)throw error;session=data.session;}
+ await loadState();
+ if(state.profile)go('home');else{page='pace';render();}
 }
 async function loginFlow(){
  await codeDialog({dismissible:true,title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana bir kod göndereceğim.',
   send:async email=>{const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;},
   verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});if(error)throw error;session=data.session;},
   done:async()=>{await loadState();}});
- page=state.profile?'home':state.placement?.done?'goal':'level';state.profile?go('home'):render();
+ if(state.profile)go('home');else{page='pace';render();}
 }
 
-/* ---------- Tünel ---------- */
-let tun={goal:null};
-const tickGoals=()=>{const fs=root.querySelector('.goal-choices');if(!fs)return;const idx=[...fs.querySelectorAll('input')].findIndex(x=>x.checked);fs.querySelectorAll('.goal-choice').forEach((l,i)=>{l.classList.toggle('in',i<=idx);l.querySelector('strong').dataset.tick=idx>=0&&i<=idx?'✓':'';});root.querySelector('[data-action="goal-next"]').disabled=idx<0;};
-const startIdx=()=>Math.max(0,stageLevels.indexOf(state?.placement?.result||'Başlangıç'));
-const goalsAvail=()=>goals.slice(startIdx());
-async function raiseGoal(){
- if(!state?.profile)return;const need=startIdx();
- if(goals.indexOf(state.profile.goal)>=need)return;
- const from=goals.slice(0,need).map(g=>`"${g}"`).join(' ve '),to=goals[need];
- await coach('profile',{goal:to});await loadState();
- notify(`${from} için gerekli derslere ihtiyacın yok. Hedefini "${to}" yaptım.`);
-}
-async function startJourney(){await coach('start',{goal:tun.goal});await loadState();page='pace';render();window.scrollTo(0,0);}
-function afterLevel(){const g=goalsAvail();if(g.length===1){tun.goal=g[0];return startJourney();}page='goal';render();window.scrollTo(0,0);}
-function goalScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Hedefin</span><h1>Yapay zekayla ne yapmak istiyorsun?</h1><fieldset class="goal-choices">${goalsAvail().map(g=>`<label class="goal-choice"><input type="radio" name="goal" value="${g}" ${tun.goal===g?'checked':''}><span><strong>${g}${g==='Üretmek'?' <em class="pill">Önerilen</em>':''}</strong><small class="muted">${goalInfo[g]}</small></span></label>`).join('')}</fieldset><button class="primary wide actions" data-action="goal-next" disabled>Devam et</button></section>`;
- root.querySelector('.goal-choices').addEventListener('change',e=>{tun.goal=e.target.value;tickGoals();});tickGoals();
-}
+/* ---------- Karşılama akışı ---------- */
+async function startJourney(){await api('start');await loadState();page='invite';render();window.scrollTo(0,0);}
 function paceScreen(){
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><div class="btn-row pace-row"><button class="secondary" data-action="pace-premium"><b>Sınırsız ders</b><small>Premium · Yakında</small></button><button class="primary" data-action="pace-free"><b>Günde ${PER_DAY} ders</b><small>Ücretsiz</small></button></div></section>`;
-}
-function backTarget(p){
- const done=!!state?.placement?.done,single=goalsAvail().length===1;
- if(p==='goal')return done?null:'level';
- if(p==='pace')return single?(done?null:'level'):'goal';
- if(p==='journey-intro')return 'pace';
- if(p==='invite')return 'journey-intro';
- if(p==='place')return 'level';
- if(p==='program')return 'home';
- return null;
-}
-const backBtn=p=>backTarget(p)?'<button type="button" class="back-btn" data-action="back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>':'';
-function levelScreen(){
- root.innerHTML=`<section class="card auth level"><span class="eyebrow">Seviyen</span><h1>Nereden başlayalım?</h1><div class="btn-row"><button class="secondary" data-action="placement">Seviyemi koç belirlesin</button><button class="primary" data-action="level-skip">Baştan başlayacağım</button></div></section>`;
-}
-function roadmap(){
- const gi=goals.indexOf(state.profile.goal),total=goalCount();
- let cum=0,prev=0;
- const levels=stageLevels.slice(0,gi+1);
- const stops=levels.map((level,k)=>{
-  const items=COURSE.filter(c=>c.level===level&&c.n<=total),left=items.filter(c=>!row(c.id)?.completed).length,last=k===levels.length-1,name=goals[k];
-  if(!left)return `<li class="done${last?' goal-stop':' mid'}"><span class="dot">${last?'🏁':'✓'}</span><div><strong>${name}</strong><small>${last?'Hedefin · tamamlandı':'Tamamlandı'}</small></div></li>`;
-  cum+=left/PER_DAY;const start=prev+1,end=Math.max(start,Math.ceil(cum));prev=end;
-  const days=start===end?`Gün ${start}`:`Gün ${start}–${end}`;
-  const tags=[start===1?'bugün':'',last?'hedefin':''].filter(Boolean).map(t=>` · ${t}`).join('');
-  return `<li class="${last?'goal-stop':'upcoming mid'}"><span class="dot">${last?'🏁':''}</span><div><strong>${name}</strong><small>${days}${tags}</small></div></li>`;
- }).join('');
- return `<ol class="roadmap">${stops}</ol>`;
-}
-function animateCount(){
- const el=root.querySelector('[data-count]');if(!el)return;const to=Number(el.dataset.count);
- if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=to;return;}
- const t0=performance.now(),dur=1100;const step=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e);if(p<1&&el.isConnected)requestAnimationFrame(step);else el.textContent=to;};requestAnimationFrame(step);
-}
-function journeyIntro(){
- const n=daysLeft();
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Yolculuğun</span><div class="day-count"><strong data-count="${n}">0</strong><span>ders günü</span></div><p>Günde ${PER_DAY} ders · <b>${esc(state.profile.goal)}</b></p>${roadmap()}<button class="primary wide actions" data-action="journey-next">Devam et</button></section>`;
- animateCount();
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><div class="btn-row pace-row"><button class="secondary" data-action="pace-premium"><b>Hızlı mod</b><small>Sınırsız ders · Premium · Yakında</small></button><button class="primary" data-action="pace-free"><b>Hafif mod</b><small>Günde 1 ders · Ücretsiz</small></button></div></section>`;
 }
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="card auth"><h1>Dersler hazırlanıyor.</h1><p class="muted">Yeni dersler eklenince burada görünür.</p><button class="primary wide actions" data-action="to-home">Devam et</button></section>`;return;}
- root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.task_id))}</h1><p>Konuyu biliyorsan teste geç.</p><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Anlat</button></div></section>`;
-}
-
-/* ---------- Seviye testi ---------- */
-let pl=null;
-const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-const stageLevels=['Başlangıç','Orta','İleri'];
-function buildPlacement(stage){
- const level=stageLevels[stage-1]||'İleri';
- const pool=LESSONS.filter(l=>l.level===level&&row(l.id)?.published);
- const items=shuffle(pool).slice(0,4).map(l=>{const q=Math.floor(Math.random()*l.questions.length);return {task:l.id,q,prompt:l.questions[q].prompt,options:l.questions[q].options};});
- pl={stage,items,i:0,answers:[]};
-}
-async function submitPlacement(){
- const r=await client.rpc('yz101_placement',{p_stage:pl.stage,p_answers:pl.answers});if(r.error)throw r.error;const x=r.data;
- if(!x.done&&x.next){buildPlacement(x.next);if(!pl.items.length){await submitPlacement();return;}placementQuestion();return;}
- await loadState();pl=null;placementResult(x);
-}
-function placementQuestion(){
- const it=pl.items[pl.i];
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Soru ${pl.i+1}</span><h1>${esc(it.prompt)}</h1><div class="options">${it.options.map((o,k)=>`<button class="option-btn" data-pa="${k}">${esc(o)}</button>`).join('')}<button class="text" data-pa="-1">Bilmiyorum</button></div></section>`;
- root.insertAdjacentHTML('afterbegin',backBtn('place'));
-}
-async function placementAnswer(k){
- const it=pl.items[pl.i];pl.answers.push({task:it.task,q:it.q,a:k<0?null:k});pl.i++;
- if(pl.i<pl.items.length){placementQuestion();window.scrollTo(0,0);return;}
- root.innerHTML='<section class="card auth"><p>Sonuç hazırlanıyor…</p></section>';await submitPlacement();
-}
-function placementResult(x){
- const lvl=x.result_level,g=goals[stageLevels.indexOf(lvl)]||goals[0],pts=x.points??(lvl==='Orta'?100:0);
- const copy=lvl==='Orta'?[`"Anlamak" için gerekli derslere ihtiyacın yok.`,`+${pts} puan`,`Programını "Kullanmak" için gerekli derslerle başlatıyorum.`]
-  :lvl==='İleri'?[`"Anlamak" ve "Kullanmak" için gerekli derslere ihtiyacın yok.`,`+${pts} puan`,`Programını "Üretmek" için gerekli derslerle başlatıyorum.`]
-  :['Temelden başlıyoruz.','','Zor olmayacak.'];
- page='place-result';
- root.innerHTML=`<section class="card auth"><span class="eyebrow">Seviyen</span><h1>${esc(g)}</h1><p>${esc(copy[0])}</p>${copy[1]?`<p class="lesson-reward">${esc(copy[1])}</p>`:''}<p>${esc(copy[2])}</p><button class="primary wide actions" data-action="place-next">Devam et</button></section>`;
+ root.innerHTML=`<section class="card auth"><span class="eyebrow">İlk ders</span><h1>${esc(titleOf(n.lesson_id))}</h1><p>Konuyu biliyorsan teste geç.</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Anlat</button></div></section>`;
 }
 
 /* ---------- Kutlama ve program ---------- */
@@ -266,21 +172,24 @@ function programScreen(){
 }
 /* ---------- Bugün ---------- */
 function homeView(){
- const u=state.profile,a=state.access,n=nextLesson(),lk=nextLocked();
+ const u=state.profile,a=state.access,n=nextLesson(),lk=n&&isLocked(n)?n:null,limited=a.daily_reached&&!a.premium&&!a.bypass;
  let card;
- if(a.daily_reached&&!a.premium&&!a.bypass)card=`<h2>Bugünkü derslerini tamamladın</h2><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><button class="primary wide" data-action="premium-info">Premium'a geç</button>`;
- else if(n)card=`<h2>${esc(titleOf(n.task_id))}</h2><div class="btn-row"><button class="secondary" data-lesson="${n.task_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.task_id}" data-mode="lesson">Başla</button></div>`;
- else if(lk)card=`<h2>Ders kilitli</h2><p class="big-count">${clock(lk.locked_until)}</p>`;
+ if(lk)card=`<h2>Ders kilitli</h2><p class="big-count">${clock(lk.locked_until)}</p><p class="muted">${esc(titleOf(lk.lesson_id))}</p>`;
+ else if(limited)card=`<h2>Bugünkü dersini tamamladın</h2><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row">${n?`<button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button>`:''}<button class="primary" data-action="premium-info">Premium'a geç</button></div>`;
+ else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
  else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="muted">Yeni dersler eklenince burada görünür.</p>`;
- const done=Math.min(doneCount(),goalCount());
+ const done=doneCount();
  return `<section class="today-head"><h1>Merhaba, ${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
- <button class="card progress-strip" data-page="journey" aria-label="Dersler sayfasını aç"><span><strong>${esc(u.goal)}</strong><span class="muted">${done}/${goalCount()} ›</span></span><progress max="${goalCount()}" value="${done}"></progress></button>
- <section class="card coach-card">${card}</section>`;
+ <section class="card coach-card">${card}</section>
+ <button class="card progress-strip" data-page="skills" aria-label="Becerilerim sayfasını aç"><span><strong>Tamamladıklarım</strong><span class="muted">${done} ders ›</span></span></button>`;
 }
 const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>',open:'<svg class="row-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>',lock:'<svg class="row-ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>',dot:'<svg class="row-ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/></svg>'};
-function journeyView(){
- const lv=stageLevels.slice(0,goals.indexOf(state.profile.goal)+1);
- return `<h1>Dersler</h1>${lv.map(level=>{const items=COURSE.filter(c=>c.level===level&&c.n<=goalCount()),c=items.filter(i=>row(i.id)?.completed).length;return `<section class="card"><strong>${goals[stageLevels.indexOf(level)]}</strong> <span class="muted">${c}/${items.length}</span><div class="list-rows">${items.map(i=>{const r=row(i.id),seq=r?.published&&!r.open&&!r.completed,can=r?.published&&!seq;return `<button class="settings-row" ${can?`data-lesson="${i.id}" data-mode="lesson"`:seq?'data-locked="1" class="settings-row seq-locked"':'disabled'}>${r?.completed?RI.done:can?RI.open:seq?RI.lock:RI.dot}<span class="row-t">${esc(i.title)}</span> <span>${can?'›':seq?'':'Yakında'}</span></button>`;}).join('')}</div></section>`;}).join('')}`;
+function skillsView(){
+ const sk=state.skills||[],done=rows().filter(r=>r.completed);
+ const gain=r=>(r.gives||[]).map(g=>`${esc(g.skill)} ${g.level}`).join(' · ');
+ return `<h1>Becerilerim</h1>
+ <section class="card"><strong>Becerilerim</strong>${sk.length?`<div class="skill-list">${sk.map(x=>`<span class="pill skill">${esc(x.skill)} <b>Seviye ${esc(x.level)}</b></span>`).join('')}</div>`:'<p class="muted">İlk dersini tamamlayınca becerilerin burada görünür.</p>'}</section>
+ <section class="card"><strong>Tamamladıklarım</strong> <span class="muted">${done.length} ders</span>${done.length?`<div class="list-rows">${done.map(r=>`<div class="settings-row">${RI.done}<span class="row-t">${esc(titleOf(r.lesson_id))}<small class="muted">${gain(r)}</small></span></div>`).join('')}</div>`:'<p class="muted">Henüz tamamlanan ders yok.</p>'}</section>`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
@@ -290,27 +199,27 @@ function profileView(){
  ${anon?`<section class="card install-card"><strong>İlerlemeni kaydet</strong><button class="primary wide" data-action="save-email">E-posta ekle</button></section>`:''}
  ${pushOn===false?`<section class="card install-card"><strong>Hatırlatmalar</strong><a class="button primary wide" href="bildirimler.html">Hatırlatmaları aç</a></section>`:''}
  ${installCard(false)}
- <section class="settings"><details class="goal-picker"><summary><span>Öğrenme hedefi</span><strong>${esc(u.goal)}</strong></summary><div class="goal-options" role="group">${goalsAvail().map(g=>`<button type="button" data-goal="${g}" aria-pressed="${goals.indexOf(g)<=goals.indexOf(u.goal)}">${g}${goals.indexOf(g)<=goals.indexOf(u.goal)?' ✓':''}</button>`).join('')}</div></details>
+ <section class="settings">
  <a class="settings-link" href="bildirimler.html">Hatırlatmalar <span>›</span></a>${anon?'':'<button data-action="logout">Çıkış yap</button>'}</section><nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:all.apps.nora@gmail.com">Yardım</a></nav>`;
 }
 
 /* ---------- Çizim ---------- */
 function render(){
- clearInterval(countdownTimer);document.body.dataset.page=page;['lesson','place'].includes(page)?wakeOn():wakeOff();pushStep();
+ clearInterval(countdownTimer);document.body.dataset.page=page;page==='lesson'?wakeOn():wakeOff();pushStep();
  if(!session||!state){welcome();return;}
- if(!state.profile&&!['goal','level','pace','journey-intro','place','place-result'].includes(page))page=state.placement?.done?'goal':'level';
- const tunnel={goal:goalScreen,level:levelScreen,pace:paceScreen,'journey-intro':journeyIntro,invite:inviteScreen,program:programScreen};
- if(tunnel[page]){tunnel[page]();root.insertAdjacentHTML('afterbegin',backBtn(page));return;}
- if(['place','place-result','celebrate','lesson'].includes(page))return;
- const v={home:homeView,journey:journeyView,profile:profileView}[page]||homeView;
+ if(!state.profile&&!['pace','invite'].includes(page))page='pace';
+ const tunnel={pace:paceScreen,invite:inviteScreen,program:programScreen};
+ if(tunnel[page]){tunnel[page]();return;}
+ if(['celebrate','lesson'].includes(page))return;
+ const v={home:homeView,skills:skillsView,profile:profileView}[page]||homeView;
  root.innerHTML=v()+nav();
  const els=[...root.querySelectorAll('.countdown')];
  if(els.length){let fired=false;const tick=()=>{for(const el of els){const s=Math.max(0,Math.ceil((Date.parse(el.dataset.until)-nowMs())/1000));el.textContent=[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');if(s===0&&!fired){fired=true;clearInterval(countdownTimer);loadState().then(render).catch(()=>{});}}};tick();countdownTimer=setInterval(tick,1000);}
 }
 
 /* ---------- Ders ekranı ---------- */
-const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
- onExit:()=>{if(history.state?.yz101&&history.state.page==='lesson')history.back();else go('home');},
+const lessonView=window.createAIKocuLessonView({client,root,getUser:()=>session?.user,getState:()=>state,refresh:loadState,notify,
+ onExit:()=>{if(history.state?.aikocu&&history.state.page==='lesson')history.back();else go('home');},
  skipResult:()=>true,
  onCompleted:async(task,info)=>{
   await loadState();
@@ -319,10 +228,11 @@ const lessonView=window.createYZ101LessonView({client,root,getUser:()=>session?.
  }
 });
 function openLesson(id,mode){
- const lr=rows().find(r=>r.task_id===id);
+ const lr=row(id);
  if(!lr?.published){notify('Bu ders yakında.');return;}
- if(!lr.completed&&(!lr.open||(state?.access?.daily_reached&&!state.access.premium&&!state.access.bypass))){limitDialog();return;}
- page='lesson';wakeOn();history.pushState({yz101:true,page:'lesson'},'',location.pathname);
+ const limited=state?.access?.daily_reached&&!state.access.premium&&!state.access.bypass;
+ if(!lr.completed&&(!lr.open||(limited&&mode!=='testout'))){limitDialog();return;}
+ page='lesson';wakeOn();history.pushState({aikocu:true,page:'lesson'},'',location.pathname);
  if(!lessonView.open(id,{mode})){page='home';render();}
  window.scrollTo(0,0);
 }
@@ -333,24 +243,16 @@ root.addEventListener('click',event=>{
  const b=event.target.closest('button');if(!b||b.closest('[data-lesson-view]')||b.type==='submit'&&b.closest('form'))return;
  execute(async()=>{
   const d=b.dataset;
-  if(d.pa!==undefined){await placementAnswer(Number(d.pa));return;}
   if(d.locked){limitDialog();return;}
   if(d.lesson){openLesson(d.lesson,d.mode||'lesson');return;}
   if(d.page){go(d.page);return;}
-  if(d.goal){await coach('profile',{goal:d.goal});await loadState();render();notify('Hedefin güncellendi.');return;}
-  if(d.mascot){if(!mascots[d.mascot])return;const {data,error}=await client.auth.updateUser({data:{yz101_mascot:d.mascot}});if(error)throw error;session={...session,user:data.user};render();return;}
+  if(d.mascot){if(!mascots[d.mascot])return;const {data,error}=await client.auth.updateUser({data:{aikocu_mascot:d.mascot}});if(error)throw error;session={...session,user:data.user};render();return;}
   const a=d.action;
   if(a==='start'){await startAnonymous();return;}
   if(a==='login'){await loginFlow();return;}
-  if(a==='goal-next'){if(!tun.goal)return;await startJourney();return;}
-  if(a==='back'){const t=backTarget(page);if(t){if(page==='place')pl=null;page=t;render();window.scrollTo(0,0);}return;}
-  if(a==='level-skip'){afterLevel();return;}
-  if(a==='pace-free'){page='journey-intro';render();window.scrollTo(0,0);return;}
+  if(a==='pace-free'){await startJourney();return;}
   if(a==='pace-premium'||a==='premium-info'){premiumInfo();return;}
-  if(a==='journey-next'){page='invite';render();window.scrollTo(0,0);return;}
-  if(a==='placement'){buildPlacement(1);if(!pl.items.length){notify('Seviye testi şu an hazır değil.');return;}page='place';pushStep();placementQuestion();window.scrollTo(0,0);return;}
-  if(a==='place-next'){afterLevel();return;}
-  if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Hedefim: '+state.profile.goal,url:location.origin+location.pathname});}catch{}return;}
+  if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Ben de dene.',url:location.origin+location.pathname});}catch{}return;}
   if(a==='celebrate-next'){if(celebrateFirst)programScreen();else go('home');window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
   if(a==='save-email'){await emailGate(true);render();paintBadge();return;}
@@ -363,7 +265,7 @@ root.addEventListener('click',event=>{
 });
 root.addEventListener('submit',event=>{
  if(event.target.closest('[data-lesson-view]'))return;event.preventDefault();const form=event.target,values=Object.fromEntries(new FormData(form));
- execute(async()=>{if(form.id==='profile-form'){await coach('profile',{username:values.username});await loadState();render();notify('Profilin kaydedildi.');}},form);
+ execute(async()=>{if(form.id==='profile-form'){await api('profile',{username:values.username});await loadState();render();notify('Profilin kaydedildi.');}},form);
 });
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(page==='program')programScreen();});
 window.addEventListener('appinstalled',()=>{deferredInstall=null;if(page==='program')programScreen();});
@@ -374,14 +276,13 @@ async function init(){
  const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
  if(!session){welcome();return;}
  try{await loadState();}catch(e){const {error:ue}=await client.auth.getUser();if(!ue)throw e;await client.auth.signOut({scope:'local'});session=null;state=null;welcome();return;}
- const back=history.state?.yz101&&mainPages.includes(history.state.page)?history.state.page:'home';
- history.replaceState({yz101:true,page:back},'',location.pathname);
- page=state.profile?back:state.placement?.done?'goal':'level';render();
- await raiseGoal().then(()=>render()).catch(()=>{});
+ const back=history.state?.aikocu&&mainPages.includes(history.state.page)?history.state.page:'home';
+ history.replaceState({aikocu:true,page:back},'',location.pathname);
+ page=state.profile?back:'pace';render();
  checkPush();
 }
 let lastSync=Date.now();
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&['lesson','place'].includes(page))wakeOn();if(document.visibilityState!=='visible'||!session||!state)return;checkPush();if(Date.now()-lastSync<60000||working||lessonView.busy()||!['home','journey','profile'].includes(page))return;lastSync=Date.now();loadState().then(()=>{if(['home','journey','profile'].includes(page)&&!working)render();}).catch(()=>{});});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&page==='lesson')wakeOn();if(document.visibilityState!=='visible'||!session||!state)return;checkPush();if(Date.now()-lastSync<60000||working||lessonView.busy()||!['home','skills','profile'].includes(page))return;lastSync=Date.now();loadState().then(()=>{if(['home','skills','profile'].includes(page)&&!working)render();}).catch(()=>{});});
 init().catch(e=>{root.innerHTML='<section class="card auth"><h1>Bağlantı kurulamadı.</h1><p>Sayfayı yenileyerek tekrar deneyebilirsin.</p><a class="button" href="./">Yenile</a></section>';failure(e);});
 try{const clr=()=>{if(document.visibilityState==='visible'&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});};document.addEventListener('visibilitychange',clr);clr();}catch{}
 document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open||d.classList.contains('gate')&&!d.dataset.dismissible)return;const r=d.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;const ev=new Event('cancel',{cancelable:true});d.dispatchEvent(ev);if(d.open&&!ev.defaultPrevented)d.close();});

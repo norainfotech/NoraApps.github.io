@@ -1,4 +1,5 @@
 const cfg=window.PUSH_CONFIG;
+try{if(cfg.storageKey==='nora-aikocu-auth'){const o='nora-yz101-auth',v=localStorage.getItem(o);if(v&&!localStorage.getItem(cfg.storageKey))localStorage.setItem(cfg.storageKey,v);localStorage.removeItem(o);}}catch{}
 const client=window.supabase.createClient(cfg.url,cfg.key,{auth:{storage:cfg.sessionStorage?window.sessionStorage:window.localStorage,storageKey:cfg.storageKey,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=s=>document.querySelector(s),message=t=>{$('#message').textContent=t;};
 let reg,sub,status,refreshing=false;

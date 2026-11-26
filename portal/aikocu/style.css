@@ -247,3 +247,5 @@ body:has(.bottom-nav) main>.bottom-nav{margin-top:auto}
 
 /* üst bar: tüm ekranlarda marka sol üstte */
 body:has(.bottom-nav) header,body[data-page] header{width:100%;justify-content:flex-start}
+
+.skill-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.pill.skill{padding:6px 12px;border-radius:999px;font-size:14px}.pill.skill b{font-weight:700}.list-rows .settings-row .row-t small{display:block;font-size:13px}

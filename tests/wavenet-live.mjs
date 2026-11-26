@@ -6,5 +6,5 @@ const result = await synthesizeWaveNet(
   'Duygu analizi için yapay zekâ seçimin uygun. Şimdi bir sınırını düşün: Alaycı bir mesajı yanlış yorumlarsa sonucu nasıl kontrol edersin?',
   { apiKey: process.env.GOOGLE_TTS_API_KEY },
 );
-await writeFile(process.argv[2] || '/tmp/yz101-wavenet-smoke.mp3', result.bytes);
+await writeFile(process.argv[2] || '/tmp/aikocu-wavenet-smoke.mp3', result.bytes);
 console.log(JSON.stringify({ contentType: result.contentType, bytes: result.bytes.length, characters: result.characters }));

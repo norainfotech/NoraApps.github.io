@@ -1,11 +1,11 @@
 import { GRADER_SYSTEM } from './policy.mjs';
-// YZ101 controlled AI grading endpoint. Tasks disabled until rubric QA and secret configuration.
+// AI Koçu controlled AI grading endpoint. Tasks disabled until rubric QA and secret configuration.
 const base=Deno.env.get("SUPABASE_URL")!;
 const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const cors={"Access-Control-Allow-Origin":"https://noraapps.web.app","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin"};
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store",...cors}});
 const hash=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,"0")).join("");
-async function control(action:string,data:Record<string,unknown>){const r=await fetch(base+"/rest/v1/rpc/yz101_ai_evaluation_control",{method:"POST",headers:{"apikey":service,"Authorization":"Bearer "+service,"Content-Type":"application/json"},body:JSON.stringify({p_action:action,...data})});if(!r.ok)throw Error("Control failed "+r.status);return r.json()}
+async function control(action:string,data:Record<string,unknown>){const r=await fetch(base+"/rest/v1/rpc/aikocu_practice_control",{method:"POST",headers:{"apikey":service,"Authorization":"Bearer "+service,"Content-Type":"application/json"},body:JSON.stringify({p_action:action,...data})});if(!r.ok)throw Error("Control failed "+r.status);return r.json()}
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  if(req.method!=="POST")return reply({error:"POST required"},405);
@@ -21,13 +21,13 @@ Deno.serve(async req=>{
   const body=await req.text();
   if(body.length>6000)return reply({error:"Input too long"},413);
   let data:any;try{data=JSON.parse(body)}catch{return reply({error:"Invalid JSON"},400)}
-  const task=String(data?.task_id||""),answer=String(data?.answer||"").trim();
+  const task=String(data?.lesson_id||""),answer=String(data?.answer||"").trim();
   if(!/^[A-Z0-9_-]{2,40}$/.test(task)||answer.length<40||answer.length>1600)return reply({error:"Invalid task or answer length"},400);
   // Never accept a rubric, scoring criteria, model name or token limit from the client.
   const key=(Deno.env.get("Anthropic YZ101") || Deno.env.get("ANTHROPIC_API_KEY"));
   if(!key)return reply({status:"not_configured"},503);
   const digest=await hash("grader-v2\n"+task+"\n"+answer);
-  const reservation=await control("reserve",{p_user:user.id,p_task:task,p_hash:digest});
+  const reservation=await control("reserve",{p_user:user.id,p_lesson:task,p_hash:digest});
   if(reservation.status!=="reserved"){
    let feedback=reservation.feedback||null;
    // Older versions stored only 300 characters. Return complete sentences from those cached records.
@@ -56,9 +56,9 @@ Deno.serve(async req=>{
    return reply({status:"evaluated",feedback,access:finished.access});
   }catch(e){
    await control("finish",{p_id:id,p_payload:{ok:false}}).catch(()=>{});
-   console.error("YZ101 grading failed",String(e).slice(0,150));
+   console.error("AI Koçu grading failed",String(e).slice(0,150));
    return reply({error:"Evaluation unavailable"},503);
   }
- }catch(e){console.error("YZ101 grading control error",String(e).slice(0,120));return reply({error:"Evaluation unavailable"},503)}
+ }catch(e){console.error("AI Koçu grading control error",String(e).slice(0,120));return reply({error:"Evaluation unavailable"},503)}
 });
 

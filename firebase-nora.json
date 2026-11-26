@@ -8,7 +8,7 @@
       ],
       "headers": [
         {
-          "source": "/yz101/**",
+          "source": "/aikocu/**",
           "headers": [
             {
               "key": "Cache-Control",
@@ -16,11 +16,23 @@
             }
           ]
         }
+      ],
+      "redirects": [
+        {
+          "source": "/yz101/**",
+          "destination": "/aikocu/",
+          "type": 301
+        },
+        {
+          "source": "/yz101",
+          "destination": "/aikocu/",
+          "type": 301
+        }
       ]
     },
     {
       "site": "yz101app",
-      "public": "portal/yz101",
+      "public": "portal/aikocu",
       "ignore": [
         "**/.*"
       ],

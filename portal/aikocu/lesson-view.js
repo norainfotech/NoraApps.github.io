@@ -1,11 +1,11 @@
 // AI Koçu ders ekranı: Öğren → Uygula → Test, ya da "Testle geç" (doğrudan test).
 // Kontrol hakkı ve kilit ders başınadır; tüm doğrulama sunucuda yapılır.
-window.createYZ101LessonView=function(opts){
+window.createAIKocuLessonView=function(opts){
  const $=s=>document.querySelector(s),client=opts.client;
- const mentor=window.createYZ101Mentor({client,getUser:opts.getUser});
+ const mentor=window.createAIKocuMentor({client,getUser:opts.getUser});
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let user=null,taskId=null,mode='lesson',access={},info={},drafts={},stage=0,busy=false,serverOffset=0,expiryRefreshing=false;
- const lessonOf=()=>LESSONS.find(l=>l.id===taskId);
+ let user=null,lessonId=null,mode='lesson',access={},info={},drafts={},stage=0,busy=false,serverOffset=0,expiryRefreshing=false;
+ const lessonOf=()=>LESSONS.find(l=>l.id===lessonId);
  const remaining=()=>Math.max(0,new Date(access.cooldown_until||0).getTime()-Date.now()-serverOffset);
  const locked=()=>remaining()>0;
  const pad=n=>String(n).padStart(2,'0');
@@ -13,7 +13,7 @@ window.createYZ101LessonView=function(opts){
  function notice(text=''){const el=$('#lesson-notice');if(el)el.textContent=text;}
  function sync(){
   const s=opts.getState();if(!s)return;
-  const row=(s.lessons||[]).find(x=>x.task_id===taskId)||{};
+  const row=(s.lessons||[]).find(x=>x.lesson_id===lessonId)||{};
   info=row;
   serverOffset=new Date(s.server_now).getTime()-Date.now();
   access={premium:s.access?.premium,bypass:s.access?.bypass,attempts_remaining:row.attempts_remaining,cooldown_until:row.locked_until,reason:row.locked_until?'retry':null,server_now:s.server_now};
@@ -51,7 +51,7 @@ window.createYZ101LessonView=function(opts){
  function rowsMarkup(flags,numeric,l){return flags.map((ok,i)=>`<div class="result-row"><span>${i+1}. soru</span><strong class="${ok?'pass':'fail'}">${ok?'Doğru':'Yanlış'}</strong></div>`).join('')+(l.numericExercise&&numeric!=null?`<div class="result-row"><span>Sayısal uygulama</span><strong class="${numeric?'pass':'fail'}">${numeric?'Doğru':'Yanlış'}</strong></div>`:'');}
 
  function renderLesson(){
-  const l=lessonOf(),d=drafts[l.id]||{},done=info.completed,aiOk=info.ai_passed;let content='';
+  const l=lessonOf(),d=drafts[l.id]||{},done=info.completed,aiOk=info.practice_passed;let content='';
   const testout=mode==='testout'&&!done;
   if(stage===0){
    content=`${String(l.concept).split('\n').filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('')}<div class="example"><h3>${esc(l.exampleTitle||'Örnek')}</h3><p style="margin:0">${esc(l.example)}</p></div><p class="warning"><strong>Yaygın hata</strong>${esc(l.pitfall)}</p>${done?'':`<div class="actions"><button id="learned" ${locked()?'disabled':''}>Devam et</button></div>`}`;
@@ -64,9 +64,9 @@ window.createYZ101LessonView=function(opts){
    content=`<h2>${testout?'Kısa test':'Öğrendiklerini kontrol et'}</h2><form id="quiz-form" novalidate><div class="test-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${p+1}"><span>${label} ${p+1}/${n}</span><div class="bar"><i style="width:${Math.round((p+1)/n*100)}%"></i></div></div>${body}<div class="btn-row test-nav"><button type="button" class="secondary" id="test-prev" ${p===0?'disabled':''}>Önceki</button>${last?(done?'':`<button id="test-submit" type="submit" class="primary" ${!ok||locked()||(!aiOk&&!testout)?'disabled':''}>${testout?'Testi bitir':'Testi tamamla'}</button>`):`<button type="button" class="primary" id="test-next" ${ok?'':'disabled'}>Sonraki</button>`}</div></form>`;
   }
   const steps=testout?'':`<nav class="lesson-steps" aria-label="Ders aşamaları">${['Öğren','Uygula','Test'].map((name,i)=>`<button data-stage="${i}" class="${stage===i?'active':''}" ${stage===i?'aria-current="step"':''} ${i===2&&!aiOk?'disabled':''}>${i+1} ${name}</button>`).join('')}</nav>`;
-  $('#lesson').innerHTML=`<div class="lesson-meta"><span class="eyebrow">${esc(({'Başlangıç':'Anlamak','Orta':'Kullanmak','İleri':'Üretmek'})[l.level]||l.level)}${done?' · Tamamlandı ✓':''}</span></div><h1>${esc(l.title)}</h1><p class="goal">${esc(l.objective)}</p>${steps}${timerMarkup()}<section class="card lesson-detail">${content}</section>`;
+  $('#lesson').innerHTML=`<div class="lesson-meta">${done?'<span class="eyebrow">Tamamlandı ✓</span>':''}</div><h1>${esc(l.title)}</h1><p class="goal">${esc(l.objective)}</p>${steps}${timerMarkup()}<section class="card lesson-detail">${content}</section>`;
   document.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>goStage(Number(b.dataset.stage)));
-  if($('#learned'))$('#learned').onclick=()=>goStage(1);
+  if($('#learned'))$('#learned').onclick=()=>goStage(aiOk?2:1);
   if($('#to-test'))$('#to-test').onclick=()=>goStage(2);
   if($('#ai-check'))$('#ai-check').onclick=()=>checkAnswer();
   if($('#response')){const c=()=>{const n=$('#response').value.length;$('#char-count').textContent=n<40?`${n} / 1600 · en az 40`:`${n} / 1600`;$('#char-count').classList.toggle('low',n<40);};$('#response').addEventListener('input',c);c();}
@@ -78,12 +78,12 @@ window.createYZ101LessonView=function(opts){
    if($('#test-prev'))$('#test-prev').onclick=()=>go(-1);
    if($('#test-next'))$('#test-next').onclick=()=>go(1);
   }
-  if($('#mentor-open'))$('#mentor-open').onclick=()=>{keepDraft();if(!(access.bypass||access.premium)){modal('Koçuna sor','<p>Takıldığın noktayı koçuna sor, yanıtındaki eksiği sana özel açıklasın. Bu özellik premium üyelikte.</p><p class="field-info">Premium üyelik satışı henüz açılmadı.</p>','Tamam');return;}mentor.open({task_id:l.id,answer:drafts[l.id]?.answer||''});};
+  if($('#mentor-open'))$('#mentor-open').onclick=()=>{keepDraft();if(!(access.bypass||access.premium)){modal('Koçuna sor','<p>Takıldığın noktayı koçuna sor, yanıtındaki eksiği sana özel açıklasın. Bu özellik premium üyelikte.</p><p class="field-info">Premium üyelik satışı henüz açılmadı.</p>','Tamam');return;}mentor.open({lesson_id:l.id,answer:drafts[l.id]?.answer||''});};
   tick();
  }
 
  function limitMessage(status){
-  if(status==='daily_limit'){showHome();document.dispatchEvent(new CustomEvent('yz101:limit'));return true;}
+  if(status==='daily_limit'){showHome();document.dispatchEvent(new CustomEvent('aikocu:limit'));return true;}
   return false;
  }
 
@@ -94,11 +94,11 @@ window.createYZ101LessonView=function(opts){
   if(!confirmed&&!access.bypass&&access.attempts_remaining===1){modal('Bu son kontrol hakkın',`<p>Yanıtın yeterli bulunmazsa tekrar denemek için 24 saat beklemen gerekir.</p><p class="field-info">Göndermeden önce bak: ${esc(l.practiceGuidance||'Yanıtın görevi karşılıyor mu?')} Yanıtın görevde istenen her şeyi içeriyor mu?</p>`,'Kontrol et',()=>checkAnswer(true),{secondary:'Yanıtı düzenle',onlyPrimary:true,tone:'info'});return;}
   setBusy(true);$('#ai-feedback').textContent='Kontrol ediliyor…';let message='',fresh=null,status='';
   try{
-   const {data,error}=await client.functions.invoke('yz101-grade-answer',{body:{task_id:l.id,answer}});if(error)throw error;
+   const {data,error}=await client.functions.invoke('aikocu-grade-answer',{body:{lesson_id:l.id,answer}});if(error)throw error;
    if(opts.getUser()?.id!==owner)return;
    status=data.status;setAccess(data.access);
    if(['evaluated','completed'].includes(data.status)&&data.feedback){drafts[l.id].feedback=data.feedback;fresh=data.feedback;await loadState();}
-   else{await loadState();message=({processing:'Kontrol sürüyor. Biraz sonra tekrar dene.',budget_limit:'Kontrol hizmeti şu an yoğun. Kontrol hakkın kullanılmadı; biraz sonra tekrar dene.',daily_ai_limit:'Bugünlük kontrol sınırına ulaştın. Yarın tekrar dene.',cooldown:'',already_completed:'',daily_limit:'',disabled:'Bu dersin kontrolü şu anda kullanılamıyor.'})[data.status]??'Kontrol şu anda tamamlanamadı. Kontrol hakkın kullanılmadı.';}
+   else{await loadState();message=({processing:'Kontrol sürüyor. Biraz sonra tekrar dene.',budget_limit:'Kontrol hizmeti şu an yoğun. Kontrol hakkın kullanılmadı; biraz sonra tekrar dene.',daily_practice_limit:'Bugünlük kontrol sınırına ulaştın. Yarın tekrar dene.',cooldown:'',already_completed:'',daily_limit:'',disabled:'Bu dersin kontrolü şu anda kullanılamıyor.'})[data.status]??'Kontrol şu anda tamamlanamadı. Kontrol hakkın kullanılmadı.';}
   }catch{message='Kontrol tamamlanamadı. Bağlantını kontrol edip tekrar dene. Teknik hatalar kontrol hakkını tüketmez.';try{await loadState();}catch{}}
   finally{
    setBusy(false);
@@ -127,12 +127,12 @@ window.createYZ101LessonView=function(opts){
   const signature=JSON.stringify([testout,answers,numeric]);
   if(d.signature!==signature){d.signature=signature;d.request=crypto.randomUUID();}d.request||=crypto.randomUUID();
   setBusy(true);$('#test-submit').textContent='Kontrol ediliyor…';
-  const rpc=testout?'yz101_test_out':'yz101_lesson_test';
-  const args=testout?{p_task:l.id,p_answers:answers,p_numeric:numeric,p_request:d.request}:{p_task:l.id,p_answers:answers,p_numeric:numeric,p_request:d.request};
+  const rpc=testout?'aikocu_test_out':'aikocu_lesson_test';
+  const args={p_lesson:l.id,p_answers:answers,p_numeric:numeric,p_request:d.request};
   try{
    const {data,error}=await client.rpc(rpc,args);if(error)throw error;if(opts.getUser()?.id!==owner)return;
    setAccess(data.access);
-   const points=(opts.getState()?.lessons||[]).find(x=>x.task_id===l.id)?.points||10;
+   const points=(opts.getState()?.lessons||[]).find(x=>x.lesson_id===l.id)?.points||10;
    await loadState();setBusy(false);renderLesson();
    if(data.status==='evaluated'){
     d.request=null;d.retry=null;
@@ -145,12 +145,12 @@ window.createYZ101LessonView=function(opts){
     }else if(locked()){
      modal('Testi geçemedin',rows+'<p>Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
     }else{
-     modal('Testi geçemedin',rows,'Tekrar dene',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;renderLesson();},{tone:'error'});
+     modal('Testi geçemedin',rows+'<p>Dersi bir kez daha oku, sonra yanlış soruları tekrar çöz.</p>','Dersi tekrar oku',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;stage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
     }
    }else if(data.status==='cooldown'){modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);}
    else if(data.status==='already_completed')showHome();
    else if(limitMessage(data.status)){/* gösterildi */}
-   else notice(({ai_required:'Önce açık uçlu yanıtını kontrol et.',incomplete:'Tüm soruları yanıtla.'})[data.status]||'Test tamamlanamadı. Tekrar dene.');
+   else notice(({practice_required:'Önce uygulama görevini tamamla.',incomplete:'Tüm soruları yanıtla.'})[data.status]||'Test tamamlanamadı. Tekrar dene.');
   }catch{if(opts.getUser()?.id===owner)notice('Sonuç alınamadı. Aynı yanıtlarla tekrar dene; kaydedilmiş bir sonuç ikinci hak tüketmez.');}
   finally{setBusy(false);if(opts.getUser()?.id===owner&&$('#lesson')&&!$('#result-dialog')?.open)renderLesson();}
  }
@@ -159,16 +159,16 @@ window.createYZ101LessonView=function(opts){
  return {
   busy:()=>busy,
   keepDraft,
-  reset(){mentor.close();drafts={};user=null;taskId=null;info={};access={};$('#result-dialog')?.remove();},
+  reset(){mentor.close();drafts={};user=null;lessonId=null;info={};access={};$('#result-dialog')?.remove();},
   // mode: 'lesson' (Öğren ile başla) | 'testout' (Testle geç)
   open(id,o={}){
    if(busy)return false;const nextUser=opts.getUser();if(user?.id!==nextUser?.id)drafts={};user=nextUser;
    const meta=LESSONS.find(l=>l.id===id);if(!meta)return false;
-   taskId=id;mode=o.mode||'lesson';testPage=0;sync();
+   lessonId=id;mode=o.mode||'lesson';testPage=0;sync();
    const s=opts.getState();
-   if(!info.completed&&s?.access?.daily_reached&&!s.access.premium&&!s.access.bypass){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';limitMessage('daily_limit');return true;}
+   if(!info.completed&&mode!=='testout'&&s?.access?.daily_reached&&!s.access.premium&&!s.access.bypass){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';limitMessage('daily_limit');return true;}
    if(locked()&&!info.completed){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);return true;}
-   stage=mode==='testout'&&!info.completed?2:(info.ai_passed&&!info.completed?2:0);
+   stage=mode==='testout'&&!info.completed?2:(info.practice_passed&&!info.completed?2:0);
    opts.root.innerHTML='<section data-lesson-view><button type="button" class="back-btn" id="lesson-back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div id="lesson-notice" role="status"></div><div id="lesson"></div></section>';$('#lesson-back').onclick=showHome;renderLesson();return true;
   }
  };

@@ -4,7 +4,7 @@ const base=Deno.env.get('SUPABASE_URL')!,service=Deno.env.get('SUPABASE_SERVICE_
 const headers={'Access-Control-Allow-Origin':'https://noraapps.web.app','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'};
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers});
 async function control(action:string,user:string,data:Record<string,unknown>={}){
- const r=await fetch(base+'/rest/v1/rpc/yz101_mentor_control',{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:action,p_user:user,...data})});
+ const r=await fetch(base+'/rest/v1/rpc/aikocu_mentor_control',{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:action,p_user:user,...data})});
  if(!r.ok)throw Error('control_failed');return await r.json();
 }
 const hash=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -38,11 +38,11 @@ Deno.serve(async req=>{
   }
   const key=Deno.env.get('Anthropic YZ101')||Deno.env.get('ANTHROPIC_API_KEY');
   if(!key)return reply({error:'mentor_unavailable'},503);
-  const context=await control('context',user,{p_task:data.task_id});
+  const context=await control('context',user,{p_lesson:data.lesson_id});
   if(context.status!=='ready')return reply(context);
   const prompt=JSON.stringify({lesson:context.rubric,previous_feedback:context.feedback,student_answer:data.answer,student_question:data.message||'Yanıtımdaki en önemli eksikliği anlamama yardım et.'});
   const cache=await hash('mentor-v5-chirp3\n'+prompt);
-  const claim=await control('reserve',user,{p_task:data.task_id,p_hash:cache});
+  const claim=await control('reserve',user,{p_lesson:data.lesson_id,p_hash:cache});
   if(claim.status==='cached')return reply({status:'ready',id:claim.id,text:claim.text});
   if(claim.status!=='reserved')return reply(claim);
   let usage={input_tokens:0,output_tokens:0};

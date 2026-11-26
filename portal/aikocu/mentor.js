@@ -1,5 +1,5 @@
 // All authorization and provider calls run on the server. No credentials here.
-window.createYZ101Mentor=function({client,getUser}){
+window.createAIKocuMentor=function({client,getUser}){
  let dialog,owner,context,requestVersion=0,busy=false,result=null,audioUrl=null;
  const element=id=>dialog.querySelector('#'+id);
  const messages={premium_required:'Koçuna sor premium üyeler içindir.',evaluation_required:'Önce yanıtını Kontrol et düğmesiyle değerlendir.',processing:'Açıklaman hazırlanıyor. Biraz sonra tekrar dene.',slow_down:'Birkaç saniye bekleyip tekrar dene.',not_found:'Bu açıklama artık kullanılamıyor.'};
@@ -11,7 +11,7 @@ window.createYZ101Mentor=function({client,getUser}){
   if(busy)return;if(!context.answer.trim()&&!element('mentor-question').value.trim()){element('mentor-status').textContent='Takıldığın noktayı yaz.';element('mentor-question').focus();return;}const version=++requestVersion;setBusy(true);stopAudio();result=null;element('mentor-listen').hidden=true;
   element('mentor-status').textContent='İnceleniyor…';element('mentor-explanation').textContent='';
   try{
-   const {data,error}=await client.functions.invoke('yz101-mentor',{body:{action:'explain',...context,message:element('mentor-question').value.trim()}});
+   const {data,error}=await client.functions.invoke('aikocu-mentor',{body:{action:'explain',...context,message:element('mentor-question').value.trim()}});
    if(!current(version))return;if(error){const detail=await error.context?.json?.().catch(()=>null);if(error.context?.status===401){element('mentor-status').textContent='Oturumun sona erdi. Tekrar giriş yap.';return;}if(detail?.error==='invalid_input'){element('mentor-status').textContent='Yazdığını kontrol edip tekrar gönder.';return;}throw error;}
    if(data.status!=='ready'){element('mentor-status').textContent=messages[data.status]||'Şu anda açıklama hazırlanamadı. Tekrar deneyebilirsin.';return;}
    result=data;element('mentor-question').value='';element('mentor-counter').textContent='0/500';element('mentor-explanation').textContent=data.text;element('mentor-listen').hidden=false;element('mentor-status').textContent='';
@@ -21,7 +21,7 @@ window.createYZ101Mentor=function({client,getUser}){
  async function listen(){
   if(busy||!result)return;const version=++requestVersion;setBusy(true);element('mentor-status').textContent='Ses hazırlanıyor…';
   try{
-   const {data,error}=await client.functions.invoke('yz101-mentor',{body:{action:'voice',id:result.id}});
+   const {data,error}=await client.functions.invoke('aikocu-mentor',{body:{action:'voice',id:result.id}});
    if(!current(version))return;if(error)throw error;
    if(data.status!=='ready'){element('mentor-status').textContent=messages[data.status]||'Ses şu anda hazırlanamadı.';return;}
    stopAudio();const bytes=Uint8Array.from(atob(data.audio),c=>c.charCodeAt(0));audioUrl=URL.createObjectURL(new Blob([bytes],{type:'audio/mpeg'}));
