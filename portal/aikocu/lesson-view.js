@@ -114,9 +114,9 @@ window.createAIKocuLessonView=function(opts){
     else if(fresh){
      const fb=`<p>${esc(fresh.feedback)}</p>`;
      if(fresh.passed)modal('Uygulama görevini tamamladın.',fb,'Teste geç',async()=>{try{await opts.gate?.('after-ai');}catch{return;}goStage(2);},{tone:'success'});
-     else if(locked())modal('Henüz olmadı',fb+'<p>Kontrol hakkın bitti. Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
-     else modal('Henüz olmadı',fb+`<p class="field-info">${access.bypass?'':'Bir kontrol hakkın daha var. '}Yanıtını geliştirip tekrar kontrol et.</p>`,'Yanıtı düzenle',null,{tone:'error'});
-    }else if(locked()){modal('Henüz olmadı','<p>Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});}
+     else if(locked())modal('Henüz olmadı',fb+'<p>Kontrol hakkın bitti.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
+     else modal('Henüz olmadı',fb+(access.bypass?'':'<p class="field-info">Bir kontrol hakkın daha var.</p>'),'Yanıtı düzenle',null,{tone:'error'});
+    }else if(locked()){modal('Henüz olmadı',(timerMarkup()||'<p>Bu ders 24 saat sonra yeniden açılır.</p>'),'Tamam',showHome,{tone:'error'});}
    }
   }
  }
@@ -148,11 +148,11 @@ window.createAIKocuLessonView=function(opts){
     }else if(testout&&!locked()){
      modal('Birkaç nokta eksik kaldı.',`<p>Hızlıca üzerinden geçelim, 4 dakika sürer.</p>`+rows,'Dersi aç',()=>{mode='lesson';stage=0;testPage=0;d.answers=[];d.numeric='';d.retry=null;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
     }else if(locked()){
-     modal('Testi geçemedin',rows+'<p>Bu ders 24 saat sonra yeniden açılır.</p>'+timerMarkup(),'Tamam',showHome,{tone:'error'});
+     modal('Testi geçemedin',rows+(timerMarkup()||'<p>Bu ders 24 saat sonra yeniden açılır.</p>'),'Tamam',showHome,{tone:'error'});
     }else{
-     modal('Testi geçemedin',rows+'<p>Dersi bir kez daha oku, sonra yanlış soruları tekrar çöz.</p>','Dersi tekrar oku',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;stage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
+     modal('Testi geçemedin',rows+'<p>Sonra yanlış soruları tekrar çöz.</p>','Dersi tekrar oku',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;stage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
     }
-   }else if(data.status==='cooldown'){modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);}
+   }else if(data.status==='cooldown'){modal('Henüz olmadı',(timerMarkup()||'<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'),'Tamam',showHome);}
    else if(data.status==='already_completed')showHome();
    else if(limitMessage(data.status)){/* gösterildi */}
    else notice(({practice_required:'Önce uygulama görevini tamamla.',incomplete:'Tüm soruları yanıtla.'})[data.status]||'Test tamamlanamadı. Tekrar dene.');
@@ -172,7 +172,7 @@ window.createAIKocuLessonView=function(opts){
    lessonId=id;mode=o.mode||'lesson';testPage=0;sync();
    const s=opts.getState();
    if(!info.completed&&mode!=='testout'&&s?.access?.daily_reached&&!s.access.premium&&!s.access.bypass){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';limitMessage('daily_limit');return true;}
-   if(locked()&&!info.completed){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';modal('Henüz olmadı','<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'+timerMarkup(),'Tamam',showHome);return true;}
+   if(locked()&&!info.completed){opts.root.innerHTML='<section data-lesson-view><div id="lesson-notice"></div><div id="lesson"></div></section>';modal('Henüz olmadı',(timerMarkup()||'<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'),'Tamam',showHome);return true;}
    stage=mode==='testout'&&!info.completed?2:(info.practice_passed&&!info.completed?2:0);
    opts.root.innerHTML='<section data-lesson-view><button type="button" class="back-btn" id="lesson-back" aria-label="Geri"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div id="lesson-notice" role="status"></div><div id="lesson"></div></section>';$('#lesson-back').onclick=showHome;renderLesson();return true;
   }

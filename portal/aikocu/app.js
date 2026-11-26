@@ -20,7 +20,7 @@ function limitDialog(){
  document.querySelector('#app-dialog')?.remove();
  const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog';d.dataset.tone='info';
  d.autofocus=true;
- d.innerHTML=limit?'<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count" data-until="'+esc(a.daily_unlock_at||'')+'">--:--:--</p><div class="dialog-actions"><button class="secondary" type="button" data-x="close">Kapat</button><button class="primary" type="button" data-x="premium">Premium\'a geç</button></div>':'<h2>Önce sıradaki dersi tamamla</h2><p>Bu ders, önceki dersleri bitirince açılır.</p><div class="dialog-actions"><button class="secondary" type="button" data-x="close">Kapat</button>'+(nx?'<button class="primary" type="button" data-x="go">Derse git</button>':'')+'</div>';
+ d.innerHTML=limit?'<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count" data-until="'+esc(a.daily_unlock_at||'')+'">--:--:--</p><div class="dialog-actions"><button class="secondary" type="button" data-x="close">Kapat</button><button class="primary" type="button" data-x="premium">Premium\'a geç</button></div>':'<h2>Önce sıradaki dersi tamamla</h2><div class="dialog-actions"><button class="secondary" type="button" data-x="close">Kapat</button>'+(nx?'<button class="primary" type="button" data-x="go">Derse git</button>':'')+'</div>';
  document.body.append(d);d.showModal();
  let timer=null;const close=()=>{clearInterval(timer);d.close();d.remove();};
  const cd=d.querySelector('.big-count');
@@ -156,7 +156,7 @@ function codeDialog({title,intro,send,verify,done,dismissible=false}){
   const msg=t=>{const m=d.querySelector('.gate-msg');if(m)m.textContent=t||'';};
   const busy=v=>d.querySelectorAll('button,input').forEach(x=>x.disabled=v);
   const stepEmail=()=>{
-   d.innerHTML=`<h2>${esc(title)}</h2><p>${esc(intro)}</p><form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>${dismissible?'<div class="gate-links"><button type="button" class="text" data-g="quit">Vazgeç</button></div>':''}`;
+   d.innerHTML=`<h2>${esc(title)}</h2>${intro?`<p>${esc(intro)}</p>`:''}<form><input name="email" type="email" required autocomplete="email" inputmode="email" placeholder="E-posta" value="${esc(email)}"><p class="gate-msg" role="alert"></p><button class="primary wide">Kod gönder</button></form>${dismissible?'<div class="gate-links"><button type="button" class="text" data-g="quit">Vazgeç</button></div>':''}`;
    d.querySelector('form').onsubmit=async e=>{e.preventDefault();email=new FormData(e.target).get('email').trim().toLowerCase();busy(true);try{await send(email);stepCode();}catch(err){busy(false);msg(gateError(err));}};
    d.querySelector('[data-g="quit"]')?.addEventListener('click',quit);
    d.querySelector('input').focus();
@@ -175,7 +175,7 @@ function codeDialog({title,intro,send,verify,done,dismissible=false}){
 function gateError(e){const m=e?.message||'';if(/already|registered|exists/i.test(m))return 'Bu e-posta başka bir hesapta kayıtlı. Başka bir e-posta dene.';if(/rate|seconds|too many/i.test(m))return 'Çok sık denedin. Biraz bekleyip tekrar dene.';if(/invalid.*email|valid email/i.test(m))return 'E-posta adresi geçersiz.';if(/not found|signups not allowed|user/i.test(m))return 'Bu e-postayla kayıtlı hesap bulunamadı.';return 'Olmadı. Tekrar dene.';}
 function emailGate(soft=false){
  if(!state?.account?.anonymous)return Promise.resolve();
- return codeDialog({dismissible:soft,title:'İlerlemeni kaydet',intro:'E-postanı yaz. Telefonunu değiştirsen de kaldığın yerden devam edersin.',
+ return codeDialog({dismissible:soft,title:'İlerlemeni kaydet',intro:'',
   send:async email=>{const {error}=await client.auth.updateUser({email});if(error)throw error;},
   verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email_change'});if(error)throw error;if(data?.session)session=data.session;},
   done:async()=>{await loadState();}});
@@ -192,7 +192,7 @@ async function startAnonymous(){
  if(state.profile)go('home');else{page='pace';render();}
 }
 async function loginFlow(){
- await codeDialog({dismissible:true,title:'Giriş yap',intro:'Kayıtlı e-postanı yaz, sana bir kod göndereceğim.',
+ await codeDialog({dismissible:true,title:'Giriş yap',intro:'',
   send:async email=>{const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;},
   verify:async(email,token)=>{const {data,error}=await client.auth.verifyOtp({email,token,type:'email'});if(error)throw error;session=data.session;},
   done:async()=>{await loadState();}});
@@ -202,13 +202,13 @@ async function loginFlow(){
 /* ---------- Karşılama akışı ---------- */
 async function startJourney(){await api('start');await loadState();page='invite';render();window.scrollTo(0,0);}
 function paceScreen(){
- root.innerHTML=`<section class="flow"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><p class="lead">Ücretsiz başla. Hızlanmak istersen Premium’a geçersin.</p><div class="option-list"><button class="option-card main" data-action="pace-free"><b>Hafif mod</b><small>Günde 1 ders · Ücretsiz</small><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button><button class="option-card" data-action="pace-premium"><b>Hızlı mod</b><small>Sınırsız ders · Premium</small><span class="pill">Yakında</span></button></div></section>`;
+ root.innerHTML=`<section class="flow"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><div class="option-list"><button class="option-card main" data-action="pace-free"><b>Hafif mod</b><small>Günde 1 ders · Ücretsiz</small><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button><button class="option-card" data-action="pace-premium"><b>Hızlı mod</b><small>Sınırsız ders · Premium</small><span class="pill">Yakında</span></button></div></section>`;
 }
 const lessonOf=id=>LESSONS.find(l=>l.id===id)||{};
 const gainPills=id=>(row(id)?.gives||[]).map(g=>`<span class="pill skill">${skillName(g.skill)} <b>Seviye ${esc(g.level)}</b></span>`).join('');
 function inviteScreen(){
  const n=nextLesson();
- if(!n){root.innerHTML=`<section class="flow"><h1>Dersler hazırlanıyor.</h1><p class="lead">Yeni dersler eklenince burada görünür.</p><button class="primary wide" data-action="to-home">Devam et</button></section>`;return;}
+ if(!n){root.innerHTML=`<section class="flow"><h1>Dersler hazırlanıyor.</h1><button class="primary wide" data-action="to-home">Devam et</button></section>`;return;}
  const g=gainPills(n.lesson_id);
  root.innerHTML=`<section class="flow"><h1>İlk dersin hazır</h1><p class="lead">Kısa bir ders, küçük bir uygulama ve 3 soru.</p><div class="card lesson-card"><h2>${esc(titleOf(n.lesson_id))}</h2><p>${esc(lessonOf(n.lesson_id).objective||'')}</p>${g?`<div class="gain">${g}</div>`:''}</div><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div><p class="hint-line">Konuyu biliyorsan Testle geç’i seç.</p></section>`;
 }
@@ -224,7 +224,7 @@ const setupItem=(ic,title,desc,done,doneText,action,label)=>`<li class="setup-it
 function programScreen(){
  page='program';document.body.dataset.page='program';
  const anon=state.account?.anonymous;
- root.innerHTML=`<section class="flow"><h1>Programın hazır</h1><p class="lead">Sıradaki dersin açılınca devam edersin. Bu adımlar işini kolaylaştırır:</p><ol class="setup-list">${setupItem('mail','İlerlemeni kaydet','Telefon değişse de kaldığın yerden devam et.',!anon,'Kaydedildi','save-email-program','E-posta ekle')}${setupItem('bell','Hatırlatmaları aç','Dersin açılınca haber veririm.',pushOn===true,'Açık','push-on','Aç')}${isStandalone()?'':setupItem('phone','Ana ekrana ekle','Uygulamayı tek dokunuşla aç.',false,'','install','Ekle')}</ol><button class="primary wide" data-action="to-home">Ana sayfaya geç</button></section>`;
+ root.innerHTML=`<section class="flow"><h1>Programın hazır</h1><ol class="setup-list">${setupItem('mail','İlerlemeni kaydet','Telefon değişse de kaldığın yerden devam et.',!anon,'Kaydedildi','save-email-program','E-posta ekle')}${setupItem('bell','Hatırlatmaları aç','Dersin açılınca haber veririm.',pushOn===true,'Açık','push-on','Aç')}${isStandalone()?'':setupItem('phone','Ana ekrana ekle','Uygulamayı tek dokunuşla aç.',false,'','install','Ekle')}</ol><button class="primary wide" data-action="to-home">Ana sayfaya geç</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
@@ -234,7 +234,7 @@ function homeView(){
  if(lk){cls+=' center';card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(lk.lesson_id))}</h2><p class="count-label">Tekrar denemek için kalan süre</p><p class="big-count">${clock(lk.locked_until)}</p>${remind}`;}
  else if(limited){cls+=' center';card=`<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row">${n?`<button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button>`:''}<button class="primary" data-action="premium-info">Premium'a geç</button></div>${remind}`;}
  else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
- else card=`<h2>Yeni dersler hazırlanıyor.</h2><p class="sub">Yeni dersler eklenince burada görünür.</p>`;
+ else card=`<h2>Yeni dersler hazırlanıyor.</h2>`;
  return `<section class="today-head"><span class="mini-avatar" aria-hidden="true">${mascot(avatarId())}</span><h1><small>Merhaba,</small>${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
  <section class="card ${cls}">${card}</section>`;
 }

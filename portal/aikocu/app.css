@@ -58,6 +58,7 @@ body[data-page=welcome] header{display:none}
 /* Akış ekranları (tempo, ilk ders, kutlama, program) */
 .flow{display:flex;flex-direction:column;justify-content:center;min-height:calc(100dvh - 104px);padding-top:12px;padding-bottom:90px}
 .flow>h1{margin-bottom:6px}
+.flow>h1:not(:has(+.lead)){margin-bottom:36px}
 .flow .lead{color:var(--muted);font-size:16px;margin-bottom:40px}
 .option-list{display:grid;gap:12px}
 .option-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;width:100%;min-height:0;padding:18px;border-radius:var(--r-lg);text-align:left;background:#fff;color:var(--ink);border:2px solid var(--line);font-weight:400}
