@@ -49,17 +49,18 @@ input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0
 label{font-size:14px;font-weight:650}
 
 /* Karşılama */
-.welcome{min-height:calc(100dvh - 44px);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-bottom:110px}
+.welcome{min-height:calc(100dvh - 44px);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-bottom:56px}
 .welcome-mark img{width:84px;height:84px;display:block;margin:0 auto 22px}
-.welcome h1{font-size:32px;margin-bottom:96px}
+.welcome h1{font-size:32px;margin-bottom:clamp(96px,22dvh,200px)}
 .welcome .btn-row{width:100%;max-width:400px;margin-top:0}
 body[data-page=welcome] header{display:none}
 
 /* Akış ekranları (tempo, ilk ders, kutlama, program) */
-.flow{display:flex;flex-direction:column;justify-content:center;min-height:calc(100dvh - 104px);padding-top:12px;padding-bottom:90px}
+.flow{display:flex;flex-direction:column;justify-content:center;min-height:calc(100dvh - 104px);padding-top:12px;padding-bottom:48px}
 .flow>h1{margin-bottom:6px}
-.flow>h1:not(:has(+.lead)){margin-bottom:36px}
-.flow .lead{color:var(--muted);font-size:16px;margin-bottom:40px}
+.flow>h1:not(:has(+.lead)){margin-bottom:clamp(36px,11dvh,110px)}
+.flow .lead{color:var(--muted);font-size:16px;margin-bottom:clamp(40px,10dvh,100px)}
+.flow>.btn-row{margin-top:clamp(32px,9dvh,90px)}
 .option-list{display:grid;gap:12px}
 .option-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;width:100%;min-height:0;padding:18px;border-radius:var(--r-lg);text-align:left;background:#fff;color:var(--ink);border:2px solid var(--line);font-weight:400}
 .option-card b{font-size:18px;font-weight:750}
@@ -179,8 +180,8 @@ body:has(.bottom-nav) main>*{flex:none}
 .app-result-dialog h2{font-size:21px;margin:0 0 10px;padding-right:4px}
 .app-result-dialog p{margin:0 0 12px;line-height:1.55}
 .app-result-dialog>p:last-of-type,#result-body>:last-child{margin-bottom:0}
-.app-result-dialog>button,.app-result-dialog form>button{margin-top:18px}
-.app-result-dialog .btn-row{margin-top:18px}
+.app-result-dialog>button,.app-result-dialog form>button{margin-top:28px}
+.app-result-dialog .btn-row{margin-top:28px}
 .app-result-dialog .tone-ic{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;margin:0 0 12px;font-size:24px}
 .app-result-dialog[data-tone=success] h2{color:var(--ok)}
 .app-result-dialog[data-tone=error] h2{color:var(--bad)}
@@ -192,8 +193,8 @@ body:has(.bottom-nav) main>*{flex:none}
 .gate-msg:empty{display:none}
 .gate-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:10px}
 .gate-links .text{font-size:15px}
-#result-dialog .btn-row{margin-top:18px}
-.dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+#result-dialog .btn-row{margin-top:28px}
+.dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:28px}
 .dialog-actions>:only-child{grid-column:1/-1}
 #result-dialog #result-action,#result-dialog #result-secondary{margin:0}
 #result-dialog .dialog-actions #result-secondary{order:-1}
@@ -312,9 +313,6 @@ body:has(.bottom-nav) main>*{flex:none}
 }
 .dialog-actions:has(>[hidden]){grid-template-columns:1fr}
 .app-result-dialog:focus{outline:none}
-@media (max-width:600px){
- .app-result-dialog:not(.gate):not(.mentor-dialog){width:100%;max-width:none;margin:auto 0 0;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom));box-shadow:0 -12px 50px #2B211830}
-}
 .btn-row>button,.dialog-actions>button{padding-left:10px;padding-right:10px}
 .coach-card button.secondary{background:#fff}
 .today-head h1{font-size:21px;line-height:1.2;flex:1}
