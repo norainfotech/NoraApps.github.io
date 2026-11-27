@@ -57,10 +57,11 @@ body[data-page=welcome] header{display:none}
 
 /* Akış ekranları (tempo, ilk ders, kutlama, program) */
 .flow{display:flex;flex-direction:column;justify-content:center;min-height:calc(100dvh - 104px);padding-top:12px;padding-bottom:48px}
-.flow>h1{margin-bottom:6px}
-.flow>h1:not(:has(+.lead)){margin-bottom:clamp(36px,11dvh,110px)}
-.flow .lead{color:var(--muted);font-size:16px;margin-bottom:clamp(40px,10dvh,100px)}
-.flow>.btn-row{margin-top:clamp(32px,9dvh,90px)}
+.flow>h1{margin-bottom:24px}
+.flow>h1:has(+.lead){margin-bottom:6px}
+.flow>h1+.option-list{margin-top:clamp(16px,9dvh,80px)}
+.flow .lead{color:var(--muted);font-size:16px;margin-bottom:24px}
+.flow>.btn-row,.flow>.wide{margin-top:clamp(40px,11dvh,110px)}
 .option-list{display:grid;gap:12px}
 .option-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;width:100%;min-height:0;padding:18px;border-radius:var(--r-lg);text-align:left;background:#fff;color:var(--ink);border:2px solid var(--line);font-weight:400}
 .option-card b{font-size:18px;font-weight:750}
@@ -80,9 +81,7 @@ body[data-page=welcome] header{display:none}
 .celebrate h1{margin-bottom:12px}
 .celebrate .reward{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:8px}
 .celebrate .pill.big{font-size:18px;padding:10px 16px;background:var(--ok-soft);color:var(--ok)}
-.celebrate .btn-row{margin-top:56px}
 
-.flow>.wide{margin-top:20px}
 
 /* Ana sayfa */
 .today-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px}
