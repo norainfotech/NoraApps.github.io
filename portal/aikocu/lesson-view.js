@@ -150,7 +150,7 @@ window.createAIKocuLessonView=function(opts){
     }else if(locked()){
      modal('Testi geçemedin',rows+(timerMarkup()||'<p>Bu ders 24 saat sonra yeniden açılır.</p>'),'Tamam',showHome,{tone:'error'});
     }else{
-     modal('Testi geçemedin',rows+'<p>Sonra yanlış soruları tekrar çöz.</p>','Dersi tekrar oku',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;stage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
+     modal('Testi geçemedin',rows,'Dersi tekrar oku',()=>{const q=data.answers.map((ok,i)=>ok?-1:i).filter(i=>i>=0),num=!!l.numericExercise&&!data.numeric_passed;d.retry={q,num};q.forEach(i=>{d.answers[i]=undefined;});if(num)d.numeric='';testPage=0;stage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});},{tone:'error'});
     }
    }else if(data.status==='cooldown'){modal('Henüz olmadı',(timerMarkup()||'<p>Tekrar denemek için biraz beklemen gerekiyor.</p>'),'Tamam',showHome);}
    else if(data.status==='already_completed')showHome();
