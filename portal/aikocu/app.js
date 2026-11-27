@@ -235,7 +235,7 @@ function homeView(){
  if(lk){cls+=' center';card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(lk.lesson_id))}</h2><p class="count-label">Tekrar denemek için kalan süre</p><p class="big-count">${clock(lk.locked_until)}</p>${remind}`;}
  else if(limited){cls+=' center';card=`<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row">${n?`<button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button>`:''}<button class="primary" data-action="premium-info">Premium'a geç</button></div>${remind}`;}
  else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
- else card=`<h2>Yeni dersler hazırlanıyor.</h2>`;
+ else{cls+=' center';card=`<h2>Yeni dersler yolda.</h2><div class="btn-row">${pushOn===true?'<button class="secondary" data-action="go-skills">İlerlemene bak</button>':'<button class="primary" data-action="push-on">Gelince haber ver</button>'}</div>`;}
  return `<section class="today-head"><span class="mini-avatar" aria-hidden="true">${mascot(avatarId())}</span><h1><small>Merhaba,</small>${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
  <section class="card ${cls}">${card}</section>`;
 }
@@ -309,6 +309,7 @@ root.addEventListener('click',event=>{
   if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Ben de dene.',url:location.origin+location.pathname});}catch{}return;}
   if(a==='celebrate-next'){if(celebrateFirst)programScreen();else go('home');window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
+  if(a==='go-skills'){go('skills');return;}
   if(a==='save-email'){await emailGate(true);render();paintBadge();return;}
   if(a==='save-email-program'){await emailGate(true);programScreen();return;}
   if(a==='edit-name'||a==='cancel-name'){const f=document.querySelector('#profile-form');f.hidden=a==='cancel-name'||!f.hidden;document.querySelector('[data-action="edit-name"]').setAttribute('aria-expanded',String(!f.hidden));if(!f.hidden){document.querySelector('#mascot-options').hidden=true;const i=document.querySelector('#name-editor');i.focus();i.select();}return;}

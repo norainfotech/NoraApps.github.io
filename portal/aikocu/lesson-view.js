@@ -48,8 +48,7 @@ window.createAIKocuLessonView=function(opts){
  }
  function goStage(n){if(busy)return;keepDraft();notice('');stage=n;testPage=0;renderLesson();window.scrollTo({top:0,left:0,behavior:'instant'});}
  function feedbackMarkup(f){return `<div class="feedback ${f.passed?'':'error'}"><strong>${f.passed?'Yeterli':'Henüz olmadı'}</strong><p>${esc(f.feedback)}</p></div>`;}
- function notesMarkup(notes){return Array.isArray(notes)&&notes.length?`<div class="result-notes">${notes.map(n=>`<div class="result-note"><strong>${Number(n.q)}. soru</strong>${n.why?`<p>${esc(n.why)}</p>`:''}${n.hint?`<small>İpucu: ${esc(n.hint)}</small>`:''}</div>`).join('')}</div>`:'';}
- function rowsMarkup(flags,numeric,l,notes){return '<div class="result-rows">'+flags.map((ok,i)=>`<div class="result-row"><span>${i+1}. soru</span><strong class="${ok?'pass':'fail'}">${ok?'Doğru':'Yanlış'}</strong></div>`).join('')+(l.numericExercise&&numeric!=null?`<div class="result-row"><span>Sayısal uygulama</span><strong class="${numeric?'pass':'fail'}">${numeric?'Doğru':'Yanlış'}</strong></div>`:'')+'</div>'+notesMarkup(notes);}
+ function rowsMarkup(flags,numeric,l,notes){const why=q=>{const n=Array.isArray(notes)?notes.find(x=>Number(x.q)===q):null;return n&&n.why?`<p class="why">${esc(n.why)}</p>`:'';};return '<div class="result-rows">'+flags.map((ok,i)=>`<div class="result-row"><span>${i+1}. soru</span><strong class="${ok?'pass':'fail'}">${ok?'Doğru':'Yanlış'}</strong></div>${ok?'':why(i+1)}`).join('')+(l.numericExercise&&numeric!=null?`<div class="result-row"><span>Sayısal uygulama</span><strong class="${numeric?'pass':'fail'}">${numeric?'Doğru':'Yanlış'}</strong></div>`:'')+'</div>';}
 
  function renderLesson(){
   const l=lessonOf(),d=drafts[l.id]||{},done=info.completed,aiOk=info.practice_passed;let content='',bar='';
@@ -69,7 +68,7 @@ window.createAIKocuLessonView=function(opts){
   }
   const testLocked=!aiOk&&!done;
    const steps=testout?'':`<nav class="lesson-steps" aria-label="Ders aşamaları">${['Öğren','Uygula','Test'].map((name,i)=>`<button data-stage="${i}" class="${stage===i?'active':''}" ${stage===i?'aria-current="step"':''} ${i===2&&testLocked?'aria-disabled="true"':''}>${i===2&&testLocked?'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>':''}${i+1} ${name}</button>`).join('')}</nav><p class="step-hint" id="step-hint" hidden>Teste geçmeden önce Uygula adımını tamamla.</p>`;
-  $('#lesson').innerHTML=`<div class="lesson-meta">${done?'<span class="eyebrow">Tamamlandı ✓</span>':''}</div><h1>${esc(l.title)}</h1><p class="goal">${esc(l.objective)}</p>${steps}${timerMarkup()}<section class="card lesson-detail">${content}</section>${bar?`<div class="lesson-bar">${bar}</div>`:''}`;
+  $('#lesson').innerHTML=`<div class="lesson-meta">${done?'<span class="eyebrow">Tamamlandı ✓</span>':''}</div><h1>${esc(l.title)}</h1>${stage===0?`<p class="goal">${esc(l.objective)}</p>`:''}${steps}${timerMarkup()}<section class="card lesson-detail">${content}</section>${bar?`<div class="lesson-bar">${bar}</div>`:''}`;
   document.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{if(b.getAttribute('aria-disabled')==='true'){$('#step-hint').hidden=false;return;}goStage(Number(b.dataset.stage));});
   if($('#learned'))$('#learned').onclick=()=>goStage(aiOk?2:1);
   if($('#to-test'))$('#to-test').onclick=()=>goStage(2);
@@ -96,7 +95,7 @@ window.createAIKocuLessonView=function(opts){
   if(busy||locked())return;keepDraft();
   const l=lessonOf(),owner=user?.id,answer=(drafts[l.id]?.answer||'').trim();
   if(answer.length<40||answer.length>1600){$('#ai-feedback').textContent='En az 40 karakter yaz.';return;}
-  if(!confirmed&&!access.bypass&&access.attempts_remaining===1){modal('Bu son kontrol hakkın',`<p>Yanıtın yeterli bulunmazsa tekrar denemek için 24 saat beklemen gerekir.</p><p class="field-info">Göndermeden önce bak: ${esc(l.practiceGuidance||'Yanıtın görevi karşılıyor mu?')} Yanıtın görevde istenen her şeyi içeriyor mu?</p>`,'Kontrol et',()=>checkAnswer(true),{secondary:'Yanıtı düzenle',onlyPrimary:true,tone:'info'});return;}
+  if(!confirmed&&!access.bypass&&access.attempts_remaining===1){modal('Bu son kontrol hakkın',`<p>Yanıtın yeterli bulunmazsa tekrar denemek için 24 saat beklemen gerekir.</p>`,'Kontrol et',()=>checkAnswer(true),{secondary:'Yanıtı düzenle',onlyPrimary:true,tone:'info'});return;}
   setBusy(true);$('#ai-feedback').textContent='Kontrol ediliyor…';let message='',fresh=null,status='';
   try{
    const {data,error}=await client.functions.invoke('aikocu-grade-answer',{body:{lesson_id:l.id,answer}});if(error)throw error;

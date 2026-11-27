@@ -200,11 +200,6 @@ body:has(.bottom-nav) main>*{flex:none}
 .result-row+.result-row{border-top:1px solid var(--line)}
 .result-row .pass{color:var(--ok)}
 .result-row .fail{color:var(--bad)}
-.result-notes{display:grid;gap:8px;margin:0 0 12px}
-.result-note{background:#FFF8E8;border:1px solid var(--brand-line);border-radius:14px;padding:12px 14px}
-.result-note strong{display:block;font-size:13px;color:var(--brand-ink);margin-bottom:2px}
-.result-note p{margin:0;font-size:14px;line-height:1.45}
-.result-note small{display:block;margin-top:6px;font-size:13px;line-height:1.4;color:var(--muted)}
 .lesson-reward{display:inline-block;background:var(--ok-soft);color:var(--ok);border-radius:999px;padding:8px 16px;font-size:20px;font-weight:800;margin:0 0 12px}
 
 /* Ders ekranı */
@@ -318,3 +313,6 @@ body:has(.bottom-nav) main>*{flex:none}
 .center-block>.section-head:first-child{margin-top:0}
 .center-block .settings{margin-bottom:0}
 .setting-row>span:first-child{min-width:0}
+.result-rows .why{margin:-4px 0 10px;font-size:14px;line-height:1.45;color:var(--muted)}
+.result-rows .why+.result-row{border-top:1px solid var(--line)}
+.coach-card.center .btn-row{justify-content:center}
