@@ -219,14 +219,13 @@ function celebrateScreen(points,first=true,task=null){
  page='celebrate';celebrateFirst=first;document.body.dataset.page='celebrate';
  root.innerHTML=`<section class="flow celebrate"><div class="celebrate-mark" aria-hidden="true">🎉</div><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><div class="reward"><span class="pill big">+${esc(points)} puan</span>${task?gainPills(task):''}</div><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam et</button></div></section>`;
 }
-const pushLabel=()=>!pushSupported()?'Bu tarayıcıda kullanılamıyor':pushOn===true?'Dersin açılınca haber veririm':'Kapalı';
-const installRow=()=>isStandalone()?'':'<button class="setting-row" data-action="install"><span>Ana ekrana ekle<small>Uygulamayı tek dokunuşla aç</small></span></button>';
-const pushRow=()=>`<button class="setting-row" role="switch" aria-checked="${pushOn===true}" data-action="push-toggle"><span>Hatırlatmalar<small>${pushLabel()}</small></span><span class="switch" aria-hidden="true"></span></button>`;
-const saveCard=a=>`<section class="card callout"><h2>İlerlemeni kaydet</h2><button class="primary wide" data-action="${a}">E-posta ekle</button></section>`;
+const saveRow=a=>`<div class="setting-row"><span>İlerlemeni kaydet</span><button class="primary small" data-action="${a}">E-posta ekle</button></div>`;
+const installRow=()=>isStandalone()?'':'<div class="setting-row"><span>Kolay erişim</span><button class="primary small" data-action="install">Ana ekrana ekle</button></div>';
+const pushRow=()=>`<button class="setting-row" role="switch" aria-checked="${pushOn===true}" data-action="push-toggle"><span>Hatırlatmalar${pushSupported()?'':'<small>Bu tarayıcıda kullanılamıyor</small>'}</span><span class="switch" aria-hidden="true"></span></button>`;
 function programScreen(){
  page='program';document.body.dataset.page='program';
  const anon=state.account?.anonymous;
- root.innerHTML=`<section class="flow"><h1>Programın hazır</h1>${anon?saveCard('save-email-program'):''}<section class="settings">${installRow()}${pushRow()}</section><button class="primary wide" data-action="to-home">Ana sayfaya geç</button></section>`;
+ root.innerHTML=`<section class="flow"><h1>Programın hazır</h1><section class="settings">${anon?saveRow('save-email-program'):''}${installRow()}${pushRow()}</section><button class="primary wide" data-action="to-home">Ana sayfaya geç</button></section>`;
 }
 /* ---------- Bugün ---------- */
 function homeView(){
@@ -244,19 +243,18 @@ const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="1
 function skillsView(){
  const sk=state.skills||[],done=rows().filter(r=>r.completed);
  return `<h1>İlerleme</h1>
- <div class="section-head"><h2>Becerilerim</h2><span>${sk.length} beceri</span></div>
+ <div class="center-block"><div class="section-head"><h2>Becerilerim</h2><span>${sk.length} beceri</span></div>
  <section class="card skills-card">${sk.length?`<div class="skill-list">${sk.map(x=>`<span class="pill skill">${skillName(x.skill)} <b>- ${esc(x.level)}</b></span>`).join('')}</div>`:'<p class="empty">İlk dersini tamamlayınca becerilerin burada görünür.</p>'}</section>
  <div class="section-head"><h2>Tamamladığım dersler</h2><span>${done.length} / ${rows().length}</span></div>
- <section class="card">${done.length?`<div class="list-rows">${done.map(r=>`<div class="list-row">${RI.done}<span class="row-t">${esc(titleOf(r.lesson_id))}</span></div>`).join('')}</div>`:'<p class="empty">Henüz tamamlanan ders yok.</p>'}</section>`;
+ <section class="card">${done.length?`<div class="list-rows">${done.map(r=>`<div class="list-row">${RI.done}<span class="row-t">${esc(titleOf(r.lesson_id))}</span></div>`).join('')}</div>`:'<p class="empty">Henüz tamamlanan ders yok.</p>'}</section></div>`;
 }
 function profileView(){
  const u=state.profile,anon=state.account?.anonymous;
  return `<h1>Profilim</h1><section class="profile-head"><button type="button" class="avatar" data-action="choose-mascot" aria-label="Maskot seç" aria-expanded="false" aria-controls="mascot-options">${mascot(avatarId())}</button><div class="profile-identity"><button class="editable-name" data-action="edit-name" aria-label="Kullanıcı adını düzenle" aria-expanded="false" aria-controls="name-editor">${esc(u.username)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button><div class="identity-meta"><span class="pill">${esc(state.points)} puan</span></div></div></section>
  <form id="profile-form" class="inline-editor" hidden><label>Kullanıcı adı<input id="name-editor" name="username" value="${esc(u.username)}" required minlength="2" maxlength="40" autocomplete="nickname"></label><div class="btn-row"><button type="button" class="secondary" data-action="cancel-name">Vazgeç</button><button class="primary">Kaydet</button></div></form>
  <div class="mascot-options" id="mascot-options" hidden>${Object.entries(mascots).map(([id,m])=>`<button type="button" data-mascot="${id}" aria-label="${m.name}" aria-pressed="${avatarId()===id}">${mascot(id)}<small>${m.name}</small></button>`).join('')}</div>
- ${anon?saveCard('save-email'):''}
- <section class="settings">${installRow()}${pushRow()}${anon?'':'<button class="setting-row" data-action="logout">Çıkış yap</button>'}</section>
- <nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:apps@norainfotech.com">Yardım</a></nav>`;
+ <div class="center-block"><section class="settings">${anon?saveRow('save-email'):''}${installRow()}${pushRow()}${anon?'':'<button class="setting-row" data-action="logout">Çıkış yap</button>'}</section>
+ <nav class="legal-links" aria-label="Yasal ve iletişim"><a href="gizlilik-politikasi.html">Gizlilik</a><a href="kullanim-kosullari.html">Koşullar</a><a href="mailto:apps@norainfotech.com">Yardım</a></nav></div>`;
 }
 
 /* ---------- Çizim ---------- */
