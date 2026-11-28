@@ -51,11 +51,8 @@ async function loadLeague(){
  leagueCelebrate();
 }
 function leagueRows(list){return list.map(r=>`<li class="league-row${r.me?' me':''}"><span class="rk">${r.rank}</span><span class="nm">${esc(r.name)}</span><b>${esc(r.points)}</b></li>`).join('');}
-function leagueCard(){
- const L=league;if(L?.status!=='ok'||L.size<3)return '';
- const days=Math.max(0,Math.ceil((Date.parse(L.ends_at)-nowMs())/864e5));
- return `<section class="card league"><div class="section-head"><h2>Haftalık lig</h2><span>${days<=1?'Son gün':days+' gün kaldı'}</span></div><ol class="league-rows">${leagueRows(L.window)}</ol><p class="league-gap">${L.gap>0?`Bir üst sıraya ${esc(L.gap)} puan kaldı`:'Zirvedesin'}</p><button class="text" data-action="league-list">Tüm liste</button></section>`;
-}
+const trophy='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function leagueChip(){const L=league;if(L?.status!=='ok'||L.size<3)return '';return `<button type="button" class="pill league-chip" data-action="league-list" aria-label="Haftalık lig, ${esc(L.rank)}. sıradasın">${trophy}${esc(L.rank)}.</button>`;}
 function openPlainDialog(cls,html,onClose){
  document.querySelector('#app-dialog')?.remove();
  const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog '+cls;d.autofocus=true;d.innerHTML=html;
@@ -68,7 +65,8 @@ async function leagueList(){
  const {data,error}=await client.rpc('aikocu_league',{p_action:'list'});if(error)throw error;
  if(data?.status!=='ok')return;
  const medal=r=>({1:'🥇',2:'🥈',3:'🥉'})[r]||r;
- openPlainDialog('league-dialog',`<h2>Haftalık lig</h2><ol class="league-rows">${data.list.map(r=>`<li class="league-row${r.me?' me':''}"><span class="rk">${medal(r.rank)}</span><span class="nm">${esc(r.name)}</span><b>${esc(r.points)}</b></li>`).join('')}</ol><button class="primary wide" type="button">Kapat</button>`);
+ const days=Math.max(0,Math.ceil((Date.parse(data.ends_at)-nowMs())/864e5));
+ openPlainDialog('league-dialog',`<div class="section-head"><h2>Haftalık lig</h2><span>${days<=1?'Son gün':days+' gün kaldı'}</span></div><ol class="league-rows">${data.list.map(r=>`<li class="league-row${r.me?' me':''}"><span class="rk">${medal(r.rank)}</span><span class="nm">${esc(r.name)}</span><b>${esc(r.points)}</b></li>`).join('')}</ol><p class="league-gap">${data.gap>0?`Bir üst sıraya ${esc(data.gap)} puan kaldı`:'Zirvedesin'}</p><button class="primary wide" type="button">Kapat</button>`);
 }
 function leagueCelebrate(){
  const lw=league?.last_week;if(!lw||leagueShown===lw.week_start||page!=='home'||document.querySelector('dialog[open]'))return;
@@ -245,12 +243,13 @@ function paceScreen(){
  root.innerHTML=`<section class="flow"><span class="eyebrow">Tempon</span><h1>Günde kaç ders?</h1><div class="option-list"><button class="option-card main" data-action="pace-free"><b>Hafif mod</b><small>Günde 1 ders · Ücretsiz</small><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button><button class="option-card" data-action="pace-premium"><b>Hızlı mod</b><small>Sınırsız ders · Premium</small><span class="pill">Yakında</span></button></div></section>`;
 }
 const lessonOf=id=>LESSONS.find(l=>l.id===id)||{};
+const testBtn=id=>state?.access?.bypass?`<button class="secondary" data-lesson="${id}" data-mode="testout">Testle geç</button>`:'';
 const gainPills=id=>(row(id)?.gives||[]).map(g=>`<span class="pill skill">${skillName(g.skill)} <b>- ${esc(g.level)}</b></span>`).join('');
 function inviteScreen(){
  const n=nextLesson();
  if(!n){root.innerHTML=`<section class="flow"><h1>Dersler hazırlanıyor.</h1><button class="primary wide" data-action="to-home">Devam et</button></section>`;return;}
  const g=gainPills(n.lesson_id);
- root.innerHTML=`<section class="flow"><h1>İlk dersin hazır</h1><p class="lead">Kısa bir ders, küçük bir uygulama ve 3 soru.</p><div class="card lesson-card"><h2>${esc(titleOf(n.lesson_id))}</h2><p>${esc(lessonOf(n.lesson_id).objective||'')}</p>${g?`<div class="gain">${g}</div>`:''}</div><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div><p class="hint-line">Konuyu biliyorsan Testle geç’i seç.</p></section>`;
+ root.innerHTML=`<section class="flow"><h1>İlk dersin hazır</h1><p class="lead">Kısa bir ders, küçük bir uygulama ve 3 soru.</p><div class="card lesson-card"><h2>${esc(titleOf(n.lesson_id))}</h2><p>${esc(lessonOf(n.lesson_id).objective||'')}</p>${g?`<div class="gain">${g}</div>`:''}</div><div class="btn-row">${testBtn(n.lesson_id)}<button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>${state?.access?.bypass?'<p class="hint-line">Konuyu biliyorsan Testle geç’i seç.</p>':''}</section>`;
 }
 
 /* ---------- Kutlama ve program ---------- */
@@ -273,12 +272,11 @@ function homeView(){
  const remind=pushOn===false?`<button class="text" data-action="push-on">Açılınca haber ver</button>`:'';
  let card,cls='coach-card';
  if(lk){cls+=' center';card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(lk.lesson_id))}</h2><p class="count-label">Tekrar denemek için kalan süre</p><p class="big-count">${clock(lk.locked_until)}</p>${remind}`;}
- else if(limited&&n){cls+=' center';card=`<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row">${n?`<button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button>`:''}<button class="primary" data-action="premium-info">Premium'a geç</button></div>${remind}`;}
- else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
+ else if(limited&&n){cls+=' center';card=`<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row"><button class="primary" data-action="premium-info">Premium'a geç</button></div>${remind}`;}
+ else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row">${testBtn(n.lesson_id)}<button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
  else{cls+=' center';card=`<h2>Yeni dersler yolda.</h2><div class="btn-row">${pushOn===true?'<button class="secondary" data-action="go-skills">İlerlemene bak</button>':'<button class="primary" data-action="push-on">Gelince haber ver</button>'}</div>`;}
- const lg=leagueCard(),main=`<section class="card ${cls}">${card}</section>`;
- return `<section class="today-head"><span class="mini-avatar" aria-hidden="true">${mascot(avatarId())}</span><h1><small>Merhaba,</small>${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
- ${lg?`<div class="center-block">${main}${lg}</div>`:main}`;
+ return `<section class="today-head"><span class="mini-avatar" aria-hidden="true">${mascot(avatarId())}</span><h1><small>Merhaba,</small>${esc(u.username)}</h1>${leagueChip()}<span class="pill">${esc(state.points)} puan</span></section>
+ <section class="card ${cls}">${card}</section>`;
 }
 const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>'};
 function skillsView(){
@@ -354,7 +352,7 @@ root.addEventListener('click',event=>{
     const {data}=await client.rpc('aikocu_share_claim');
     if(data?.status==='ok'||data?.status==='already')shareClaimed=true;
     if(b.isConnected)b.textContent='Paylaş';
-    if(data?.status==='ok'){await loadState();showResultDialog('Teşekkürler','Paylaşımın için +'+data.points+' puan kazandın.','Tamam','success');}
+    if(data?.status==='ok'){await loadState();showResultDialog('Tebrikler','+'+data.points+' puan kazandın.','Tamam','success');}
    }
    return;}
   if(a==='league-list'){await leagueList();return;}
