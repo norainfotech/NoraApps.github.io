@@ -38,6 +38,46 @@ async function detachPush(){try{if(!('serviceWorker' in navigator))return;const 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(action,data={}){const {data:r,error}=await client.rpc('aikocu_api',{p_action:action,p_data:data});if(error)throw error;return r;}
 async function loadState(){state=await api('state');serverOffset=Date.parse(state.server_now)-Date.now();return state;}
+/* ---------- Haftalık lig ve paylaşım bonusu ---------- */
+let league=null,leagueAt=0,leagueBusy=false,shareClaimed=null,leagueShown='';
+async function loadLeague(){
+ if(!session||leagueBusy)return;leagueBusy=true;leagueAt=Date.now();
+ try{
+  const {data,error}=await client.rpc('aikocu_league',{p_action:'state'});if(error)throw error;
+  if(typeof data?.share_claimed==='boolean')shareClaimed=data.share_claimed;
+  const changed=JSON.stringify(data)!==JSON.stringify(league);league=data;
+  if(changed&&page==='home'&&!working)render();
+ }catch{}finally{leagueBusy=false;}
+ leagueCelebrate();
+}
+function leagueRows(list){return list.map(r=>`<li class="league-row${r.me?' me':''}"><span class="rk">${r.rank}</span><span class="nm">${esc(r.name)}</span><b>${esc(r.points)}</b></li>`).join('');}
+function leagueCard(){
+ const L=league;if(L?.status!=='ok'||L.size<3)return '';
+ const days=Math.max(0,Math.ceil((Date.parse(L.ends_at)-nowMs())/864e5));
+ return `<section class="card league"><div class="section-head"><h2>Haftalık lig</h2><span>${days<=1?'Son gün':days+' gün kaldı'}</span></div><ol class="league-rows">${leagueRows(L.window)}</ol><p class="league-gap">${L.gap>0?`Bir üst sıraya ${esc(L.gap)} puan kaldı`:'Zirvedesin'}</p><button class="text" data-action="league-list">Tüm liste</button></section>`;
+}
+function openPlainDialog(cls,html,onClose){
+ document.querySelector('#app-dialog')?.remove();
+ const d=document.createElement('dialog');d.id='app-dialog';d.className='app-result-dialog '+cls;d.autofocus=true;d.innerHTML=html;
+ document.body.append(d);d.showModal();
+ const close=()=>{d.close();d.remove();onClose?.();};
+ d.addEventListener('click',e=>{const r=d.getBoundingClientRect();const outside=e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;if(e.target.closest('button')||outside)close();});
+ d.addEventListener('cancel',e=>{e.preventDefault();close();});
+}
+async function leagueList(){
+ const {data,error}=await client.rpc('aikocu_league',{p_action:'list'});if(error)throw error;
+ if(data?.status!=='ok')return;
+ const medal=r=>({1:'🥇',2:'🥈',3:'🥉'})[r]||r;
+ openPlainDialog('league-dialog',`<h2>Haftalık lig</h2><ol class="league-rows">${data.list.map(r=>`<li class="league-row${r.me?' me':''}"><span class="rk">${medal(r.rank)}</span><span class="nm">${esc(r.name)}</span><b>${esc(r.points)}</b></li>`).join('')}</ol><button class="primary wide" type="button">Kapat</button>`);
+}
+function leagueCelebrate(){
+ const lw=league?.last_week;if(!lw||leagueShown===lw.week_start||page!=='home'||document.querySelector('dialog[open]'))return;
+ leagueShown=lw.week_start;
+ const medal=({1:'🥇',2:'🥈',3:'🥉'})[lw.rank]||'🎉';
+ openPlainDialog('league-dialog',`<h2>${medal} Geçen hafta ${esc(lw.rank)}. oldun</h2><div class="reward"><span class="pill big">+${esc(lw.points)} puan</span></div><button class="primary wide" type="button">Tamam</button>`,async()=>{
+  try{await client.rpc('aikocu_league',{p_action:'seen'});if(league)league.last_week=null;await loadState();if(page==='home')render();}catch{}
+ });
+}
 const nowMs=()=>Date.now()+serverOffset;
 const rows=()=>state?.lessons||[];
 const row=id=>rows().find(x=>x.lesson_id===id);
@@ -217,7 +257,7 @@ function inviteScreen(){
 let celebrateFirst=false;
 function celebrateScreen(points,first=true,task=null){
  page='celebrate';celebrateFirst=first;document.body.dataset.page='celebrate';
- root.innerHTML=`<section class="flow celebrate"><div class="celebrate-mark" aria-hidden="true">🎉</div><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><div class="reward"><span class="pill big">+${esc(points)} puan</span>${task?gainPills(task):''}</div><div class="btn-row">${navigator.share?'<button class="secondary" data-action="share">Paylaş</button>':''}<button class="primary" data-action="celebrate-next">Devam et</button></div></section>`;
+ root.innerHTML=`<section class="flow celebrate"><div class="celebrate-mark" aria-hidden="true">🎉</div><h1>${first?'İlk dersin tamam!':'Ders tamam!'}</h1><div class="reward"><span class="pill big">+${esc(points)} puan</span>${task?gainPills(task):''}</div><div class="btn-row">${navigator.share?`<button class="secondary" data-action="share">Paylaş${shareClaimed===true?'':' · +5 puan'}</button>`:''}<button class="primary" data-action="celebrate-next">Devam et</button></div></section>`;
 }
 const saveRow=a=>`<div class="setting-row"><span>İlerlemeni kaydet</span><button class="primary small" data-action="${a}">E-posta ekle</button></div>`;
 const installRow=()=>isStandalone()?'':'<div class="setting-row"><span>Kolay erişim</span><button class="primary small" data-action="install">Ana ekrana ekle</button></div>';
@@ -236,8 +276,9 @@ function homeView(){
  else if(limited&&n){cls+=' center';card=`<h2>Bugünkü dersini tamamladın</h2><p class="count-label">Yeni dersin açılmasına</p><p class="big-count">${a.daily_unlock_at?clock(a.daily_unlock_at):'24:00:00'}</p><div class="btn-row">${n?`<button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button>`:''}<button class="primary" data-action="premium-info">Premium'a geç</button></div>${remind}`;}
  else if(n)card=`<span class="eyebrow">Sıradaki ders</span><h2>${esc(titleOf(n.lesson_id))}</h2><p class="sub">${esc(lessonOf(n.lesson_id).objective||'')}</p><div class="btn-row"><button class="secondary" data-lesson="${n.lesson_id}" data-mode="testout">Testle geç</button><button class="primary" data-lesson="${n.lesson_id}" data-mode="lesson">Başla</button></div>`;
  else{cls+=' center';card=`<h2>Yeni dersler yolda.</h2><div class="btn-row">${pushOn===true?'<button class="secondary" data-action="go-skills">İlerlemene bak</button>':'<button class="primary" data-action="push-on">Gelince haber ver</button>'}</div>`;}
+ const lg=leagueCard(),main=`<section class="card ${cls}">${card}</section>`;
  return `<section class="today-head"><span class="mini-avatar" aria-hidden="true">${mascot(avatarId())}</span><h1><small>Merhaba,</small>${esc(u.username)}</h1><span class="pill">${esc(state.points)} puan</span></section>
- <section class="card ${cls}">${card}</section>`;
+ ${lg?`<div class="center-block">${main}${lg}</div>`:main}`;
 }
 const RI={done:'<svg class="row-ic ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>'};
 function skillsView(){
@@ -267,6 +308,7 @@ function render(){
  if(['celebrate','lesson'].includes(page))return;
  const v={home:homeView,skills:skillsView,profile:profileView}[page]||homeView;
  root.innerHTML=v()+nav();
+ if(page==='home'&&!leagueBusy&&Date.now()-leagueAt>60000)loadLeague();
  const els=[...root.querySelectorAll('.countdown')];
  if(els.length){let fired=false;const tick=()=>{for(const el of els){const s=Math.max(0,Math.ceil((Date.parse(el.dataset.until)-nowMs())/1000));el.textContent=[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');if(s===0&&!fired){fired=true;clearInterval(countdownTimer);loadState().then(render).catch(()=>{});}}};tick();countdownTimer=setInterval(tick,1000);}
 }
@@ -276,7 +318,7 @@ const lessonView=window.createAIKocuLessonView({client,root,getUser:()=>session?
  onExit:()=>{if(history.state?.aikocu&&history.state.page==='lesson')history.back();else go('home');},
  skipResult:()=>true,
  onCompleted:async(task,info)=>{
-  await loadState();
+  leagueAt=0;await loadState();
   let first=false;try{first=!localStorage.getItem(firstKey());if(first)localStorage.setItem(firstKey(),'1');}catch{}
   celebrateScreen(info.points,first,task);window.scrollTo(0,0);
  }
@@ -306,7 +348,16 @@ root.addEventListener('click',event=>{
   if(a==='login'){await loginFlow();return;}
   if(a==='pace-free'){await startJourney();return;}
   if(a==='pace-premium'||a==='premium-info'){premiumInfo();return;}
-  if(a==='share'){try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Ben de dene.',url:location.origin+location.pathname});}catch{}return;}
+  if(a==='share'){
+   let shared=false;try{await navigator.share({title:'AI Koçu',text:'AI Koçu ile yapay zekayı öğrenmeye başladım. Ben de dene.',url:location.origin+location.pathname});shared=true;}catch{}
+   if(shared&&shareClaimed!==true){
+    const {data}=await client.rpc('aikocu_share_claim');
+    if(data?.status==='ok'||data?.status==='already')shareClaimed=true;
+    if(b.isConnected)b.textContent='Paylaş';
+    if(data?.status==='ok'){await loadState();showResultDialog('Teşekkürler','Paylaşımın için +'+data.points+' puan kazandın.','Tamam','success');}
+   }
+   return;}
+  if(a==='league-list'){await leagueList();return;}
   if(a==='celebrate-next'){if(celebrateFirst)programScreen();else go('home');window.scrollTo(0,0);return;}
   if(a==='to-home'){go('home');return;}
   if(a==='go-skills'){go('skills');return;}
@@ -317,7 +368,7 @@ root.addEventListener('click',event=>{
   if(a==='install'){await installApp();return;}
   if(a==='push-on'){if(pushOn!==true)await enablePush();refreshPushViews();return;}
   if(a==='push-toggle'){if(pushOn===true)await disablePush();else await enablePush();refreshPushViews();return;}
-  if(a==='logout'){await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;page='home';welcome();}
+  if(a==='logout'){league=null;shareClaimed=null;leagueAt=0;await detachPush();await client.auth.signOut({scope:'local'});session=null;state=null;page='home';welcome();}
  },b.parentElement);
 });
 root.addEventListener('submit',event=>{
@@ -329,7 +380,7 @@ window.addEventListener('appinstalled',()=>{deferredInstall=null;if(page==='prog
 
 async function init(){
  if(!client)throw Error('Uygulama bağlantısı yüklenemedi. Sayfayı yenile.');
- client.auth.onAuthStateChange((event,s)=>{session=s;if(event==='SIGNED_OUT'){lessonView.reset();state=null;if(!working){page='home';welcome();}}});
+ client.auth.onAuthStateChange((event,s)=>{session=s;if(event==='SIGNED_OUT'){lessonView.reset();state=null;league=null;shareClaimed=null;leagueAt=0;if(!working){page='home';welcome();}}});
  const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
  if(!session){welcome();return;}
  try{await loadState();}catch(e){const {error:ue}=await client.auth.getUser();if(!ue)throw e;await client.auth.signOut({scope:'local'});session=null;state=null;welcome();return;}

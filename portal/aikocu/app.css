@@ -316,3 +316,20 @@ body:has(.bottom-nav) main>*{flex:none}
 .result-rows .why{margin:-4px 0 10px;font-size:14px;line-height:1.45;color:var(--muted)}
 .result-rows .why+.result-row{border-top:1px solid var(--line)}
 .coach-card.center .btn-row{justify-content:center}
+
+/* Haftalık lig */
+.league{padding:16px 20px 8px;margin-bottom:0}
+.league .section-head{margin:0 0 8px}
+.league-rows{list-style:none;margin:0;padding:0}
+.league-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.league-row:first-child{border-top:0}
+.league-row .rk{flex:none;width:28px;text-align:center;font-weight:750;color:var(--muted)}
+.league-row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.league-row b{flex:none;font-weight:800;font-variant-numeric:tabular-nums}
+.league-row.me{margin:2px -10px;padding:10px;border-radius:12px;border-top-color:transparent;background:var(--brand-soft)}
+.league-row.me+.league-row{border-top-color:transparent}
+.league-gap{margin:6px 0 0;font-size:14px;color:var(--muted)}
+.league button.text{margin:0 0 0 -14px}
+.center-block>.card+.card{margin-top:14px}
+.league-dialog .league-rows{margin:6px 0 0}
+.league-dialog .reward{margin:6px 0 0}
